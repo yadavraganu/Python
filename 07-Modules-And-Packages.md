@@ -1,6 +1,6 @@
 # Python Modules and Packages
 
-A **module** is a single `.py` file; a **package** is a directory of modules. Code modularity lets you break large applications into smaller, manageable, and reusable pieces.
+A module is a single `.py` file, a package is a directory of modules. Code modularity lets you break large applications into smaller, manageable, and reusable pieces.
 
 ## 1. Definitions and Architecture
 
