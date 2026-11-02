@@ -153,17 +153,71 @@ Use a `lambda` for short throwaway callbacks (`key=`, `sorted`, `map`/`filter`);
 
 ## 6. Higher-Order Functions
 
-Functions that take other functions as arguments or return them.
+A higher-order function is a function that either:
+
+- takes another function as an argument, or
+- returns a function as a result.
+
+This is one of the most useful ideas in Python because it lets you write generic logic that works with behavior, not just values.
+
+- Example 1: Takes a function as an argument — `map`
 
 ```python
-list(map(str.upper, names))
-list(filter(lambda x: x % 2 == 0, nums))
-
-from functools import reduce
-total = reduce(lambda acc, x: acc + x, nums, 0)
+numbers = [1, 2, 3, 4]
+squares = list(map(lambda x: x * x, numbers))
+print(squares)   # [1, 4, 9, 16]
 ```
 
-In practice, list comprehensions are usually preferred over `map`/`filter` for readability, but interviewers often expect you to know both.
+`map` applies the function to every item in the iterable.
+
+- Example 2: Takes a function as an argument — `filter`
+
+```python
+devices = ["phone", "tablet", "laptop", "watch"]
+long_names = list(filter(lambda name: len(name) >= 6, devices))
+print(long_names)   # ['tablet', 'laptop']
+```
+
+`filter` keeps only the items for which the function returns `True`.
+
+- Example 3: Takes a function as an argument — `sorted(key=...)`
+
+```python
+students = [("Anurag", 25), ("Amit", 18), ("Riya", 22)]
+ordered = sorted(students, key=lambda student: student[1])
+print(ordered)
+# [('Amit', 18), ('Riya', 22), ('Anurag', 25)]
+```
+
+Here, the function decides how the list should be ordered.
+
+- Example 4: Takes a function as an argument — `reduce`
+
+```python
+from functools import reduce
+
+numbers = [1, 2, 3, 4]
+total = reduce(lambda acc, x: acc + x, numbers, 0)
+print(total)   # 10
+```
+
+`reduce` repeatedly applies a function to combine values into one result.
+
+- Example 5: Returns a function
+
+```python
+def make_multiplier(factor):
+    def multiply(x):
+        return x * factor
+    return multiply
+
+triple = make_multiplier(3)
+print(triple(5))   # 15
+```
+
+This is the classic pattern behind closures and decorators: a function creates and returns another function that captures some state.
+
+In practice, list comprehensions are often more readable than `map`/`filter`.
 
 ## 7. `functools.partial` and `functools.wraps`
 
