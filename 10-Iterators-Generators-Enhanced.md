@@ -1,21 +1,3 @@
-# Python Iterators & Generators
-
-> **Interview focus:** Python fundamentals, lazy evaluation, memory behavior, streaming ETL, and resource-safe data processing.
->
-> **Prerequisites:** Functions, classes, exceptions, context managers, and basic Python collections.
-
-## Learning objectives
-
-After this guide, you should be able to:
-
-- Explain the iterable, iterator, and generator protocols precisely.
-- Implement custom iterators and re-iterable containers.
-- Explain how `yield`, generator state, and lazy evaluation work.
-- Use `send()`, `throw()`, `close()`, and `yield from`.
-- Choose suitable `itertools` building blocks and understand their memory behavior.
-- Build resource-safe, incremental data-processing pipelines.
-- Discuss when generators help—and when they do not—in a data-engineering system.
-
 ## 1. Iterables vs. Iterators — The Core Distinction
 
 These terms are often used interchangeably in casual conversation, but they describe different protocols. This is a common opening interview question.
