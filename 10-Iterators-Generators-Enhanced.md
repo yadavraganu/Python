@@ -661,15 +661,6 @@ Use these as practice prompts. For each answer, explain the concept, show a shor
 | 15 | Generator vs. async generator? | Sync vs. async protocol, event-loop I/O, `for` vs. `async for` |
 | 16 | Are generators a replacement for Spark, Kafka, or distributed processing? | Scope limits: process-local iteration vs. distributed execution or durable streaming |
 
-### Practice problems
-
-1. Implement a custom iterator that reads a sequence in fixed-size chunks.
-2. Write a generator that yields only valid JSON records from a line-delimited file and reports malformed lines.
-3. Build an ETL pipeline with extract, validate, transform, batch, and load stages.
-4. Merge two already-sorted input iterators without converting either input into a list.
-5. Explain and demonstrate how an early `break` affects a generator that owns a file handle.
-6. Compare memory behavior for a generator pipeline, a list-based pipeline, and a pipeline whose `tee()` branches advance at different speeds.
-
 ## 10. Quick Revision — Notes & Gotchas
 
 - **Every iterator is iterable, but not every iterable is an iterator.** Be able to demonstrate this with a list and `iter(list)`.
