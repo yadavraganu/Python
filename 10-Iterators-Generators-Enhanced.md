@@ -1,4 +1,4 @@
-## 1. Iterables vs. Iterators — The Core Distinction
+## 1. Iterables vs. Iterators
 
 These terms are often used interchangeably in casual conversation, but they describe different protocols. This is a common opening interview question.
 
