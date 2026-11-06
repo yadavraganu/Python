@@ -1,6 +1,7 @@
 ## Contents
 
 - [Part I — Foundations](#part-i--foundations)
+
   1. [What OOP is and when to use it](#1-what-oop-is-and-when-to-use-it)
   2. [Classes and objects](#2-classes-and-objects)
   3. [Instance creation, `self`, and `__init__`](#3-instance-creation-self-and-__init__)
@@ -8,17 +9,20 @@
   5. [Instance, class, and static methods](#5-instance-class-and-static-methods)
   6. [Encapsulation, naming conventions, and properties](#6-encapsulation-naming-conventions-and-properties)
 - [Part II — Inheritance and Polymorphism](#part-ii--inheritance-and-polymorphism)
+  
   7. [Inheritance and method overriding](#7-inheritance-and-method-overriding)
   8. [`super()` and cooperative inheritance](#8-super-and-cooperative-inheritance)
   9. [Multiple inheritance and MRO](#9-multiple-inheritance-and-mro)
   10. [Polymorphism and duck typing](#10-polymorphism-and-duck-typing)
   11. [Structural typing with `Protocol`](#11-structural-typing-with-protocol)
 - [Part III — Abstraction and Composition](#part-iii--abstraction-and-composition)
+  
   12. [Abstract base classes (`abc`)](#12-abstract-base-classes-abc)
   13. [Composition, dependency injection, and delegation](#13-composition-dependency-injection-and-delegation)
   14. [Aggregation vs composition](#14-aggregation-vs-composition)
   15. [Mixins](#15-mixins)
 - [Part IV — Making Classes Behave Like Native Python Objects](#part-iv--making-classes-behave-like-native-python-objects)
+  
   16. [Dunder methods and object representations](#16-dunder-methods-and-object-representations)
   17. [Operator overloading and `NotImplemented`](#17-operator-overloading-and-notimplemented)
   18. [Equality, ordering, and hashing](#18-equality-ordering-and-hashing)
@@ -27,21 +31,17 @@
   21. [Dataclasses](#21-dataclasses)
   22. [`__slots__`](#22-__slots__)
 - [Part V — Design and Error Handling](#part-v--design-and-error-handling)
+  
   23. [Custom exceptions](#23-custom-exceptions)
   24. [SOLID principles](#24-solid-principles)
   25. [Choosing inheritance, composition, ABCs, and Protocols](#25-choosing-inheritance-composition-abcs-and-protocols)
 - [Part VI — Python's Object Model](#part-vi--pythons-object-model)
+  
   26. [`__new__` vs `__init__`](#26-__new__-vs-__init__)
   27. [Attribute lookup](#27-attribute-lookup)
   28. [Descriptors](#28-descriptors)
   29. [`__init_subclass__`](#29-__init_subclass__)
   30. [Metaclasses](#30-metaclasses)
-- [Appendices](#appendices)
-  - [Common built-ins and standard-library tools](#appendix-a--common-built-ins-and-standard-library-tools)
-  - [Common mistakes](#appendix-b--common-oop-mistakes)
-  - [Practice exercises](#appendix-c--practice-exercises)
-  - [Quick reference](#appendix-d--quick-reference)
-  - [Verification notes and references](#appendix-e--verification-notes-and-references)
 
 ---
 
