@@ -70,19 +70,3 @@ A structured, code-first repository for mastering Python from fundamentals to se
 | Mid-level | Apply iterators/generators, decorators, context managers, descriptors, typing, dataclasses, testing, and standard-library tools. |
 | Senior | Explain runtime behavior, memory, concurrency, async cancellation, profiling, security, reliability, and maintainable package design. |
 | Lead / architect | Evaluate system boundaries, dependency direction, data contracts, concurrency models, backpressure, operability, deployment, and trade-offs. |
-
-## Quality and testing
-
-- Python code fences are syntax-checked with `ast.parse` by `tools/validate_guides.py`.
-- The targeted executable examples and behavior tests live in `tests/` and run with `python -m pytest`.
-- Some snippets are intentionally partial, illustrative, version-specific, or require a real package/service/runtime. The guides label these cases; do not run every fragment as a standalone script.
-- CPython-specific claims are labelled. Do not assume object layout, bytecode, ref-counting, or GIL details are language guarantees.
-- Version-sensitive release notes are dated in the relevant guide. Use the version deployed in your environment as the compatibility baseline.
-
-## Suggested validation commands
-
-```bash
-python -m pip install pytest
-python tools/validate_guides.py
-python -m pytest -q
-```
