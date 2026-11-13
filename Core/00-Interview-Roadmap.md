@@ -2,22 +2,6 @@
 
 This repository is a practical, code-first guide to Python from language fundamentals through production engineering. It is designed for interviews ranging from junior developer to senior/lead engineer and Python-focused architect.
 
-## Version policy
-
-- The examples target **Python 3.12+** unless a section explicitly marks a different minimum version.
-- All Python code fences were syntax-checked with **CPython 3.13.5**. The targeted behavior suite (16 tests) was executed with **CPython 3.13.5 and pytest 9.0.2**. This is not a claim that every contextual fragment was executed as a standalone program.
-- As of **13 November 2026**, Python 3.15 is the latest stable feature release. Do not confuse the latest release with the version deployed by a company; interview answers should state the version assumption when behavior is version-dependent.
-- Python 3.14+/3.15-only behavior is explicitly version-labelled and was not runtime-tested on the 3.13.5 interpreter. Current-release notes were checked against the relevant documentation.
-- Most language-level concepts apply across implementations. Sections on bytecode, reference counts, memory allocation, string interning, and the GIL are explicitly **CPython implementation details**.
-
-## How to use the repository
-
-1. Read the fundamentals in order. Do not memorize isolated definitions; run the examples and predict their output first.
-2. For each topic, be able to explain the concept, show a small implementation, name the trade-off, and identify a common failure mode.
-3. Work through the exercises without looking at the solution. Then explain why the selected approach is appropriate.
-4. For senior interviews, connect language features to production concerns: correctness, complexity, memory, concurrency, testing, observability, security, deployability, and maintainability.
-5. Verify version-sensitive claims against the Python and tool versions used by the target team.
-
 ## Coverage map
 
 | Area | Main guide(s) | Interview depth |
@@ -105,20 +89,3 @@ For a design or behavior question, answer in this order:
 | Bytecode opcodes and object sizes | Vary by Python release, build, architecture, and implementation. |
 | Thread/process start method | Depends on OS and Python release; select explicitly when behavior matters. |
 | Type annotations | Primarily metadata for tools; Python does not automatically enforce them at runtime. |
-
-## Practical completion checklist
-
-- [ ] I can explain each topic without relying on memorized one-line definitions.
-- [ ] I can run and modify the examples.
-- [ ] I can state the time and space complexity of common operations.
-- [ ] I know which objects are mutable, hashable, iterable, and lazy.
-- [ ] I can explain exceptions, resource cleanup, and cancellation.
-- [ ] I can design a package and install it outside the source tree.
-- [ ] I can add types and tests without coupling code to a concrete implementation.
-- [ ] I can choose a concurrency model and explain its trade-offs.
-- [ ] I can profile a bottleneck and validate an optimization.
-- [ ] I can identify unsafe operations at input, filesystem, process, and serialization boundaries.
-- [ ] I can describe system boundaries, dependency direction, idempotency, backpressure, observability, and architecture trade-offs.
-- [ ] I can distinguish portable Python behavior from CPython-specific behavior.
-
-The repository is a study guide, not a substitute for reading the release notes of the exact Python, pytest, and dependency versions used in a production environment.
