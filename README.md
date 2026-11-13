@@ -1,42 +1,88 @@
-## Contents
+# Python Core — Interview and Engineering Guide
 
-### Fundamentals
-- **[01-Data-Types.md](01-Data-Types.md)** — Built-in Python data types, their behavior, and practical use cases
-- **[02-Functions.md](02-Functions.md)** — Function definitions, parameters, return values, and effective design patterns
-- **[03-Scopes.md](03-Scopes.md)** — Variable scoping, LEGB resolution, and namespace management
-- **[04-Exceptions.md](04-Exceptions.md)** — Exception handling, custom exceptions, and robust error management
-- **[05-OneLiners.md](05-OneLiners.md)** — Compact Python idioms and clever one-liner solutions
+A structured, code-first repository for mastering Python from fundamentals to senior-engineer and architect-level interviews. The guides emphasize how Python behaves, when to use a feature, complexity and performance trade-offs, production failure modes, and the reasoning expected in interviews.
 
-### Collections & Data Structures
-- **[06-Choose-Collection.md](06-Choose-Collection.md)** — Choosing the right collection type for different scenarios and performance needs
+## Start here
 
-### Modules & Packages
-- **[07-Modules-And-Packages.md](07-Modules-And-Packages.md)** — Creating modules, organizing packages, and understanding imports
+1. Read **[00-Interview-Roadmap](Core/00-Interview-Roadmap.md)** for the learning sequence, coverage map, and interview-readiness checklist.
+2. Follow the topic guides in order for a first pass.
+3. Revisit the advanced sections using the interview questions and practical checklists.
+4. Run examples in the Python version used by your target environment. Version-specific syntax and CPython-only details are labelled.
 
-### Advanced Functions
-- **[08-Closures.md](08-Closures.md)** — Closures, nested functions, and state retention in Python
-- **[09-Decorators.md](09-Decorators.md)** — Function and class decorators for extending behavior cleanly
+## Guide index
 
-### Iterators & Generators
-- **[10-Iterators-Generators.md](10-Iterators-Generators.md)** — Iterator protocol, generators, and lazy evaluation
+### Foundations and language
 
-### Object-Oriented Programming
-- **[11-Object-Oriented-Program.md](11-Object-Oriented-Program.md)** — Classes, inheritance, polymorphism, and object-oriented design
-- **[12-Dunder-Methods.md](12-Dunder-Methods.md)** — Magic methods and protocol implementation
-- **[13-Context-Manager.md](13-Context-Manager.md)** — Context managers and the `with` statement
-- **[14-Python-Descriptors.md](14-Python-Descriptors.md)** — Descriptor protocol and property-based behavior
+- [01 — Data Types](Core/01-Data-Types.md) — values, mutability, identity, hashability, copying, and built-in types.
+- [02 — Functions](Core/02-Functions.md) — parameters, arguments, return values, callables, recursion, and function design.
+- [03 — Scopes](Core/03-Scopes.md) — namespaces, LEGB, closures' scope rules, `global`, and `nonlocal`.
+- [04 — Exceptions](Core/04-Exceptions.md) — exception flow, custom exceptions, chaining, cleanup, and exception groups.
+- [05 — One-Liners](Core/05-OneLiners.md) — idiomatic compact Python and when clarity should win over brevity.
+- [25 — Language Syntax and Control Flow](Core/25-Language-Syntax-And-Control-Flow.md) — expressions, truthiness, loops, comprehensions, unpacking, pattern matching, and syntax evolution.
+- [26 — Strings, Unicode, and Regex](Core/26-Strings-Unicode-And-Regex.md) — text model, encoding, formatting, normalization, and regular expressions.
 
-### Advanced Concepts
-- **[15-Protocals.md](15-Protocals.md)** — Protocols, structural typing, and duck typing in Python
-- **[16-Garbage-Collection.md](16-Garbage-Collection.md)** — Memory management and Python’s garbage collection model
-- **[17-Internals.md](17-Internals.md)** — CPython internals and implementation-level details
-- **[18-Global-Interpreter-Lock.md](18-Global-Interpreter-Lock.md)** — The GIL, its purpose, and its impact on concurrency
+### Collections, files, and standard library
 
-### Concurrency & Async
-- **[19-Threading.md](19-Threading.md)** — Multithreading concepts and thread management in Python
-- **[20-Async-Programming.md](20-Async-Programming.md)** — Asynchronous programming with `async` and `await`
+- [06 — Choosing Collections](Core/06-Choose-Collection.md) — list, tuple, dict, set, deque, heap, bisect, complexity, and memory trade-offs.
+- [27 — File I/O and Serialization](Core/27-File-IO-And-Serialization.md) — `pathlib`, text/binary I/O, atomic writes, JSON, CSV, and pickle risks.
+- [30 — Standard-Library Toolkit](Core/30-Standard-Library-Toolkit.md) — `collections`, `itertools`, `functools`, dates/timezones, `decimal`, and useful modules.
 
-### Tools & Best Practices
-- **[21-Python-Logger.md](21-Python-Logger.md)** — Logging setup, configuration, and practical best practices
-- **[22-pytest.md](22-pytest.md)** — Testing with `pytest` and test-driven development workflows
-- **[23-CPython-Object-Model.md](23-CPython-Object-Model.md)** — A deeper look into Python’s object model and runtime behavior
+### Modules and functional programming
+
+- [07 — Modules and Packages](Core/07-Modules-And-Packages.md) — import system, package design, environments, distribution, and plugin entry points.
+- [08 — Closures](Core/08-Closures.md) — lexical closures, captured state, and practical patterns.
+- [09 — Decorators](Core/09-Decorators.md) — function/class decorators, metadata, composition, and reusable cross-cutting behavior.
+- [10 — Iterators and Generators](Core/10-Iterators-Generators.md) — iteration protocol, generator lifecycle, lazy pipelines, and async iteration.
+
+### Object model and design
+
+- [11 — Object-Oriented Programming](Core/11-Object-Oriented-Program.md) — classes, inheritance, composition, SOLID, and object-oriented design.
+- [12 — Dunder Methods](Core/12-Dunder-Methods.md) — Python data model, operators, containers, and special-method protocols.
+- [13 — Context Managers](Core/13-Context-Manager.md) — deterministic resource cleanup and `with` semantics.
+- [14 — Descriptors](Core/14-Python-Descriptors.md) — descriptor protocol, properties, binding, and attribute lookup precedence.
+- [15 — Protocols](Core/15-Protocols.md) — duck typing, structural subtyping, and runtime/static protocols.
+- [24 — Python Design Patterns](Core/24-Python-Design-Patterns.md) — idiomatic implementations and trade-offs for common patterns.
+- [28 — Typing and Static Analysis](Core/28-Typing-And-Static-Analysis.md) — annotations, generics, protocols, `TypedDict`, overloads, and type-checker workflows.
+- [29 — Dataclasses](Core/29-Dataclasses.md) — generated methods, mutability, defaults, inheritance, slots, and value objects.
+
+### Runtime, memory, and concurrency
+
+- [16 — Garbage Collection](Core/16-Garbage-Collection.md) — reference counting, cyclic GC, weak references, and object lifetime.
+- [17 — Python Internals](Core/17-Internals.md) — import lifecycle, bytecode, frames, attribute lookup, and interpreter execution.
+- [18 — Global Interpreter Lock](Core/18-Global-Interpreter-Lock.md) — GIL behavior, free-threaded builds, sub-interpreters, and parallelism.
+- [19 — Threading and Multiprocessing](Core/19-Threading-Multiprocessing.md) — synchronization, pools, IPC, start methods, and concurrency choices.
+- [20 — Async Programming](Core/20-Async-Programming.md) — event loops, coroutines, tasks, cancellation, structured concurrency, and async I/O.
+- [23 — CPython Object Model](Core/23-CPython-Object-Model.md) — CPython object layouts, allocator, dictionaries, lists, and Unicode internals.
+
+### Engineering practice and architecture
+
+- [21 — Python Logging](Core/21-Python-Logger.md) — logger hierarchy, handlers, formatters, structured logging, and operational practice.
+- [22 — pytest](Core/22-Pytest.md) — fixtures, parametrization, mocking, plugins, coverage, and CI.
+- [31 — Performance and Profiling](Core/31-Performance-And-Profiling.md) — Big-O, benchmarking, CPU profiling, memory profiling, and optimization workflow.
+- [32 — Security and Safe Python](Core/32-Security-And-Safe-Python.md) — safe parsing, serialization, subprocesses, secrets, paths, and dependency hygiene.
+- [33 — Python Architecture and Design](Core/33-Python-Architecture-And-Design.md) — dependency direction, boundaries, reliability, observability, testing, and senior design interviews.
+
+## Scope and interview depth
+
+| Level | Expected capability |
+|---|---|
+| Junior | Explain built-in types, functions, control flow, collections, exceptions, modules, basic OOP, and write correct readable code. |
+| Mid-level | Apply iterators/generators, decorators, context managers, descriptors, typing, dataclasses, testing, and standard-library tools. |
+| Senior | Explain runtime behavior, memory, concurrency, async cancellation, profiling, security, reliability, and maintainable package design. |
+| Lead / architect | Evaluate system boundaries, dependency direction, data contracts, concurrency models, backpressure, operability, deployment, and trade-offs. |
+
+## Quality and testing
+
+- Python code fences are syntax-checked with `ast.parse` by `tools/validate_guides.py`.
+- The targeted executable examples and behavior tests live in `tests/` and run with `python -m pytest`.
+- Some snippets are intentionally partial, illustrative, version-specific, or require a real package/service/runtime. The guides label these cases; do not run every fragment as a standalone script.
+- CPython-specific claims are labelled. Do not assume object layout, bytecode, ref-counting, or GIL details are language guarantees.
+- Version-sensitive release notes are dated in the relevant guide. Use the version deployed in your environment as the compatibility baseline.
+
+## Suggested validation commands
+
+```bash
+python -m pip install pytest
+python tools/validate_guides.py
+python -m pytest -q
+```

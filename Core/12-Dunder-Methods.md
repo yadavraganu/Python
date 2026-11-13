@@ -1,8 +1,10 @@
+# Python Dunder Methods and Data Model
+
 "Dunder" = **d**ouble **under**score. These methods aren't called directly in normal code — Python's syntax and built-in functions call them *for* you: `obj + other` calls `obj.__add__(other)`, `len(obj)` calls `obj.__len__()`, `for x in obj` calls `obj.__iter__()`. This is how user-defined classes hook into Python's built-in operators and functions, and it's the same mechanism behind operator overloading, the container types, and the `with`/`for`/`in` statements.
 
 This file focuses on **object lifecycle, representation, comparison, containers, and callables**. Attribute-access dunders (`__getattr__` and friends) get the deepest treatment, in their own section below, since they're the most subtle and most interview-tested group. A few categories are covered in full elsewhere and only summarized here, with a pointer — see the table at the end.
 
-<br></br>
+
 
 ## 1. Object Lifecycle — `__new__`, `__init__`, `__del__`
 
@@ -31,7 +33,7 @@ Called when an object is about to be garbage-collected. **Do not rely on it for 
 - At interpreter shutdown, globals and modules may already be torn down when `__del__` runs, causing confusing `NameError`s inside it.
 - Prefer a **context manager** (`__enter__`/`__exit__`, see `13-Context-Manager.md`) for deterministic cleanup instead.
 
-<br></br>
+
 
 ## 2. String Representation — `__repr__`, `__str__`, `__format__`
 
@@ -54,7 +56,7 @@ print(repr(OnlyStr()))    # <__main__.OnlyStr object at 0x...> — does NOT fall
 
 `__format__(self, format_spec)` backs `format(obj, spec)` and f-string format specs (`f"{obj:>10}"`), letting a class define its own mini-language for alignment, precision, or units.
 
-<br></br>
+
 
 ## 3. Comparison and Hashing
 
@@ -74,7 +76,7 @@ print(NoHash.__hash__)     # None
 ```
 If instances need to go in a `set`/dict key, define both, keeping the invariant **equal objects must have equal hashes**. Writing all four ordering methods by hand is repetitive — `functools.total_ordering` (covered in `11-Object-Oriented-Program.md`) derives the rest from `__eq__` plus one of them. Arithmetic operators (`__add__`, reflected forms like `__radd__`, and in-place forms like `__iadd__`) are also covered there in depth, since they fit naturally alongside operator-overloading design, not attribute access.
 
-<br></br>
+
 
 ## 4. Container / Sequence Protocol
 
@@ -97,7 +99,7 @@ class IterOnly:
 2 in IterOnly()   # True — found via iteration, no __contains__ needed
 ```
 
-<br></br>
+
 
 ## 5. Truthiness — `__bool__`
 
@@ -112,7 +114,7 @@ class Neither: pass
 bool(Neither())        # True — no __bool__ or __len__, so the default applies
 ```
 
-<br></br>
+
 
 ## 6. Callable Objects — `__call__`
 
@@ -128,13 +130,13 @@ callable(add5)      # True
 ```
 This is the same mechanism behind class-based decorators (see `09-Decorators.md`) and any "function-like" object that needs to carry state.
 
-<br></br>
+
 
 ## 7. Context Manager Protocol — `__enter__`, `__exit__`
 
 Backs the `with` statement. Covered in full depth, including the exception-suppression rules and common pitfalls, in `13-Context-Manager.md` — included here only for completeness of the dunder-method overview.
 
-<br></br>
+
 
 ## 8. Attribute Access — The Full Protocol
 
@@ -264,7 +266,7 @@ Note: `__delattr__` here only *raises* — it doesn't print any extra warning me
 
 **See also:** descriptors (`__get__`/`__set__`/`__delete__` on a *class*, not an instance) interact with this same lookup chain and take priority over instance `__dict__` for data descriptors — covered in full in `14-Python-Descriptors.md`.
 
-<br></br>
+
 
 ## Quick Reference: Dunder Categories
 
@@ -282,7 +284,7 @@ Note: `__delattr__` here only *raises* — it doesn't print any extra warning me
 | Attribute access | `__getattr__`, `__setattr__`, `__delattr__`, `__getattribute__`, `__dir__` | `obj.x`, `obj.x = v`, `del obj.x`, `dir(obj)` | This file (section 8) |
 | Descriptors | `__get__`, `__set__`, `__delete__` | Attribute access on a *class* attribute | `14-Python-Descriptors.md` |
 
-<br></br>
+
 
 ## Notes & Gotchas Worth Knowing for Interviews
 

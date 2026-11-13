@@ -71,7 +71,9 @@ import sys
 n = 100
 print(("a" * n) is ("a" * n))                        # False — built at runtime: two objects
 print(sys.intern("a" * n) is sys.intern("a" * n))     # True  — interned explicitly
-print(("a" * 100) is ("a" * 100))                      # True  — constant-folded at compile time
+literal_a = "a" * 100
+literal_b = "a" * 100
+print(literal_a is literal_b)                            # May be True due to implementation optimizations; never rely on it
 print(("a" * n) == ("a" * n))                          # True  — value equality is what you should compare
 ```
 See `17-Internals.md` for how interning works.
@@ -243,3 +245,8 @@ print(deep)      # [[1, 2], [3, 4]]      — fully independent
 - **Mutable default arguments:** `def f(x=[]):` — the default list is created once and shared across calls, a classic bug source.
 - **Type hints (3.5+):** `def func(x: int) -> str:` — not enforced at runtime, purely for tooling/clarity (`mypy`, IDEs).
 - **`NotImplemented` vs `NotImplementedError`:** the former is a value returned from dunder methods; the latter is an exception raised in abstract methods. Frequently confused.
+
+
+### `NotImplemented` is not `NotImplementedError`
+
+`NotImplemented` is a special singleton returned by rich-comparison and arithmetic methods to indicate that an operation is not supported for the operand combination, allowing Python to try reflected/fallback behavior. It is not an exception. Do not use it as an ordinary false value: since Python 3.14, `bool(NotImplemented)` raises `TypeError` (earlier versions emitted a deprecation warning). `NotImplementedError` is an exception used to mark an unimplemented method.

@@ -1,3 +1,5 @@
+# Python Context Managers
+
 ### What Is a Context Manager?
 A **context manager** is a construct that handles the setup and teardown of resources automatically. It's most commonly used with the `with` statement.
 ```python
@@ -33,7 +35,7 @@ The return value of `__exit__` decides what happens to an exception:
 - **Truthy** → the exception is **suppressed**; execution continues after the `with` block as if nothing happened.
 - **Falsy (including no explicit `return`, i.e. `None`)** → the exception **propagates** normally.
 
-<br></br>
+
 
 ### Custom Context Manager with Exception Handling
 ```python
@@ -113,7 +115,7 @@ def __exit__(self, exc_type, exc_value, traceback):
 | `divide()`     | Inside the `with` block                    |
 | `__exit__`     | At the end of the `with` block or on error |
 
-<br></br>
+
 
 ## Combining Multiple Context Managers
 
@@ -161,7 +163,7 @@ with CM("outer"), CM("inner", suppress=True):
 # exit outer, exc=None          <- outer's __exit__ runs, but sees NOTHING happened
 ```
 
-<br></br>
+
 
 ## How `@contextmanager` Works
 
@@ -207,7 +209,7 @@ with log_context("Test Block"):
 - If an exception occurs inside the `with` block, it's **thrown into the generator at the `yield` point** — this is the generator `.throw()` mechanism from the Iterators & Generators notes, which is *why* wrapping `yield` in `try/except`/`finally` works at all here.
 - You can suppress or log exceptions inside the `except` block; to suppress, the generator must **not re-raise** (swallow it instead of calling `raise`).
 
-<br></br>
+
 
 ### `@contextmanager` Objects Are Single-Use, Not Reentrant
 
@@ -229,7 +231,7 @@ with log_context("demo"):     # a brand-new generator, works fine
 ```
 A **class-based** context manager (`__enter__`/`__exit__` written by hand) doesn't have this restriction automatically, but is still typically written for single use unless you deliberately design it to reset its state in `__enter__`.
 
-<br></br>
+
 
 ### Using a `@contextmanager` Function as a Decorator
 
@@ -270,7 +272,7 @@ except RuntimeError as e:
     print(e.__context__)      # original error — still reachable, and shown in the traceback as "During handling of the above exception..."
 ```
 
-<br></br>
+
 
 ## Useful `contextlib` Helpers
 
@@ -305,7 +307,7 @@ Beyond `@contextmanager`, the standard library ships several ready-made context 
   with cm:
       do_work()
   ```
-<br></br>
+
 
 ## Async Context Managers
 
@@ -342,7 +344,7 @@ async def main():
 ```
 All the same rules apply — single `yield`, exceptions thrown in at the `yield` point, single-use per generator instance — just with `await`-capable setup/teardown.
 
-<br></br>
+
 
 ## File Handling with `@contextmanager`
 
@@ -372,7 +374,7 @@ with open_file("example.txt", "w") as file:
 2. `yield f` → control passes to the `with` block
 3. After block ends or error occurs → `finally` closes the file
 
-<br></br>
+
 
 ## Database Connection with `@contextmanager`
 ```python
@@ -411,7 +413,7 @@ with db_connection("test.db") as conn:
 | `rollback()` | Reverts changes if error occurs |
 | `close()` | Always closes connection |
 
-<br></br>
+
 
 ## Notes & Gotchas
 

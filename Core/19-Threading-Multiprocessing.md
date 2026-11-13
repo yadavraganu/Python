@@ -1,4 +1,6 @@
-Python multithreading lets you run multiple threads (smaller units of a process) concurrently, ideal for tasks that involve *waiting* — network requests, file I/O (**I/O-bound tasks**). Due to Python's **Global Interpreter Lock (GIL)**, though, it does not provide true parallelism for **CPU-bound** tasks within a single CPython process — that's what **multiprocessing** is for.
+# Python Concurrency: Threads and Processes
+
+Python multithreading lets multiple threads make progress within one process. It is especially useful for tasks that wait on network, file, or database I/O. In a conventional GIL-enabled CPython build, only one thread executes Python bytecode at a time per interpreter, so threads usually do not speed up pure-Python CPU work. Processes, native code that releases the GIL, sub-interpreters with separate GILs, and optional free-threaded CPython are other parallelism options.
 
 # Threading
 
@@ -13,7 +15,7 @@ A thread is a separate flow of execution. Threads within the same process **shar
 
 #### The Global Interpreter Lock (GIL)
 
-The **GIL** is a mutex in CPython allowing only one thread to execute Python bytecode at a time within a single process. This is why multithreading isn't effective for CPU-bound tasks. However, when a thread is waiting on an external operation (file read, network response), it **releases the GIL**, letting other threads run — perfect for **I/O-bound** work.
+In a conventional GIL-enabled CPython build, the **GIL** allows only one thread per interpreter to execute Python bytecode at a time. This limits pure-Python CPU parallelism between threads. Many blocking I/O operations release the GIL while waiting, allowing other threads to run. Free-threaded builds and other Python implementations have different constraints.
 
 ## Creating Your First Thread
 
@@ -215,7 +217,18 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
 
 # Multiprocessing
 
-Since threads share one GIL-limited interpreter, they can't achieve real parallelism for CPU-bound work (tight loops, number crunching, image processing). The `multiprocessing` module sidesteps the GIL entirely by running code in **separate processes** — each with its **own Python interpreter and own memory space** — achieving genuine parallel execution across CPU cores.
+In a conventional GIL-enabled CPython build, threads do not usually achieve parallel execution of pure-Python CPU-bound work. The `multiprocessing` module runs code in **separate processes**, each with its own interpreter and memory space, and can use multiple CPU cores. Account for process startup, serialization, memory, and inter-process communication overhead.
+
+### Process start methods and version changes
+
+Choose a start method deliberately when behavior matters:
+
+- `spawn` starts a fresh interpreter and imports the main module; it is the default on Windows and macOS.
+- `fork` clones the current process. It can be unsafe around multithreaded runtimes and libraries.
+- `forkserver` asks a clean server process to fork workers, reducing some risks of forking a multithreaded parent.
+- On Unix platforms other than macOS, Python 3.14 changed the default from `fork` to `forkserver`. Defaults can vary by platform and Python version.
+
+Inspect `multiprocessing.get_start_method()` or create an explicit context with `multiprocessing.get_context("spawn")`. Do not assume that a process inherits the parent's live state.
 
 ## Process vs. Thread — The Core Trade-off
 
@@ -252,7 +265,7 @@ if __name__ == "__main__":     # REQUIRED on Windows/macOS (spawn start method) 
     print("Main: All done.")
 ```
 
-**Why the `if __name__ == "__main__":` guard is mandatory here (not just good practice):** on platforms using the `spawn` start method (the default on Windows and macOS), each child process **re-imports** the main module to set itself up. Without the guard, that re-import would recursively spawn more processes — an infinite loop of process creation. Linux's default `fork` start method copies the existing process instead, so this bites people less often there, but the guard is required for portable code.
+**Why the `if __name__ == "__main__":` guard is mandatory here (not just good practice):** with the `spawn` and `forkserver` start methods, worker processes import the main module to initialize themselves. Without the guard, top-level process creation can recursively create more workers. Use the guard for portable code, including on Unix systems.
 
 ## `Pool` — Distributing Work Across Processes
 
@@ -370,7 +383,7 @@ if __name__ == "__main__":
 
 - **Everything passed to a child process must be picklable** (functions defined at module level, not lambdas or local closures, and picklable arguments/return values) — a very common "why did my multiprocessing code fail with `PicklingError`" bug.
 - **Process creation overhead is real** — spawning a process is far more expensive than a thread; for very short tasks, the overhead can exceed the benefit of parallelism.
-- **`fork` vs. `spawn` vs. `forkserver` start methods** behave differently across platforms (Linux defaults to `fork`, Windows/macOS to `spawn`) — code relying on inherited state via `fork` can silently break on a `spawn`-only platform.
+- **`fork` vs. `spawn` vs. `forkserver` start methods** behave differently across platforms and Python versions. Windows and macOS use `spawn`; on Unix platforms other than macOS, Python 3.14 changed the default to `forkserver` (earlier versions commonly defaulted to `fork`). Query `multiprocessing.get_start_method()` or choose an explicit context rather than assuming a default.
 - **Debugging is harder** — print statements and tracebacks from child processes can interleave unpredictably or fail to surface cleanly; logging with process-aware formatting helps.
 
 # Threading vs. Multiprocessing vs. Asyncio — Choosing the Right Tool
@@ -381,13 +394,13 @@ if __name__ == "__main__":
 | Heavy CPU computation (math, image/data processing) | `multiprocessing` | Bypasses the GIL entirely via separate interpreters/cores |
 | Thousands of concurrent I/O-bound connections (e.g., a web server) | `asyncio` | Single-threaded event loop avoids per-thread memory/context-switch overhead at scale |
 | A handful of I/O-bound tasks, simple to reason about | `threading` (`ThreadPoolExecutor`) | Simpler mental model than async/await for small-scale concurrency |
-| Need true parallel speedup on multi-core hardware | `multiprocessing` | Only multiprocessing achieves genuine parallel *execution*, not just concurrency |
+| Need CPU parallelism on GIL-enabled CPython | `multiprocessing` or native code | Processes bypass the per-interpreter GIL; native extensions can release it |
 
-**The one-line interview answer:** *threading and asyncio give you concurrency (interleaved progress, good for waiting); multiprocessing gives you parallelism (simultaneous execution, good for computing) — and the GIL is exactly the reason Python needs multiprocessing at all for CPU-bound speedups.*
+**The one-line interview answer:** *threads and asyncio are useful ways to manage concurrent work; processes are a common way to parallelize CPU-bound Python on GIL-enabled CPython. Free-threaded builds, separate-GIL sub-interpreters, and native code can change that trade-off.*
 
 ## Notes & Gotchas
 
-- **"Concurrency vs. parallelism"** is the single most important distinction in this whole topic — threading/asyncio interleave work; only multiprocessing runs Python code truly simultaneously.
+- **"Concurrency vs. parallelism"** is the single most important distinction in this whole topic. Threads/asyncio provide concurrency; processes, sub-interpreters with separate GILs, native code that releases the GIL, and free-threaded CPython can provide parallel execution in suitable configurations.
 - **The GIL is per-process** — this is *why* multiprocessing works around it: each process gets its own interpreter and its own GIL, so they don't contend with each other.
 - **`if __name__ == "__main__":` is not optional for multiprocessing** on `spawn`-based platforms — omitting it can cause runaway recursive process creation.
 - **Data shared across processes must be explicitly shared** (`Value`, `Array`, `Manager`, or message-passed via `Queue`/`Pipe`) — unlike threads, which share memory by default.

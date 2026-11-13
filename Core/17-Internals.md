@@ -80,25 +80,24 @@ Every `import` statement triggers a sophisticated system of **finders** and **lo
 Python first checks `sys.modules`, a dict of every previously loaded module. If present, the cached module object is reused — the file is **not** re-executed.
 
 ### Step 2 — The Import Protocol (Finders and Loaders)
-If not cached, Python's import protocol kicks in:
-
-- **Finders** locate the module. Python checks an ordered list, `sys.meta_path`, which by default includes finders for **built-in** modules, **frozen** modules (bundled into the interpreter), and a **path-based finder** that searches `sys.path`. A finder that succeeds returns a `ModuleSpec` — an object encapsulating everything needed to load the module (its name, loader, file location, etc.).
-- **Loaders** take that `ModuleSpec` and actually execute the module code to bring it into existence.
+If the name is not cached, Python consults the ordered `sys.meta_path` finder list. The default list includes finders for **built-in** modules, **frozen** modules, and path-based imports. A finder that succeeds returns a `ModuleSpec`, which describes the module and the loader responsible for loading it.
 
 ### Step 3 — `sys.path` Search
-The path-based finder walks the directories listed in `sys.path`, which typically includes:
-- The directory of the currently running script (or the current directory in interactive mode).
+For ordinary filesystem imports, the path-based finder searches the locations in `sys.path`, which commonly include:
+- The script directory (or the current directory in interactive use).
 - Directories from the `PYTHONPATH` environment variable.
-- Installation-dependent standard-library and `site-packages` directories.
+- Standard-library and installed-package directories determined by the interpreter/environment.
 
-### Step 4 — Compilation and Bytecode Caching
-When loading from a `.py` file, Python compiles it to bytecode and caches that bytecode in a `__pycache__` directory as a `.pyc` file (e.g., `module.cpython-311.pyc`). On the next import, Python checks the source file's modification time (or, since 3.7, an optional hash) against what's recorded in the cached file; if unchanged, it skips recompilation and loads the cached bytecode directly.
+Custom meta-path finders can use other sources, so not every import is a filesystem search.
 
-### Step 5 — Module Execution
-The module's code runs top-to-bottom in its own fresh namespace (its own `__dict__`), populating it with the functions, classes, and variables it defines. This is also why **top-level code has side effects on import** — anything not guarded by `if __name__ == "__main__":` runs immediately.
+### Step 4 — Create the Module and Cache It Early
+The import machinery creates the module object from its `ModuleSpec` (the loader may provide a custom object). It inserts that object into `sys.modules` **before executing the module body**. This prevents unbounded recursion during circular imports, but another module in a circular-import chain can observe a partially initialized module.
 
-### Step 6 — Module Object Creation and Caching
-A module object is created, inserted into `sys.modules`, and returned to the caller — available instantly to any future import in the same process.
+### Step 5 — Compile and Cache Source Bytecode
+For source modules, the loader compiles source into version-specific bytecode. When bytecode caching is enabled, Python can store it under `__pycache__` as a `.pyc` file. The cache is validated using source metadata (or a hash-based mode); `-B` / `PYTHONDONTWRITEBYTECODE` disables writing bytecode cache files. Bytecode caches are an optimization, not a portable distribution format.
+
+### Step 6 — Execute the Module
+The loader executes the module code in its namespace (`module.__dict__`), populating it with the functions, classes, and variables it defines. This is why **top-level code has side effects on import** — anything not guarded by `if __name__ == "__main__":` runs immediately. If execution fails, the failing module's cache entry is normally removed; successfully imported dependencies remain cached.
 
 ### Extensibility
 The whole system is pluggable: you can register a custom object on `sys.meta_path` (a custom finder/loader pair) to import modules from unusual sources — databases, zip archives (`zipimport` does exactly this), network locations, or in-memory bytecode.
@@ -115,7 +114,7 @@ Python code passes through a compiler and an interpreter (the **Python Virtual M
 1. **Source Code Creation** — a programmer writes code and saves it in a `.py` file.
 2. **Compilation to Bytecode** — when run, the interpreter's compiler translates source into an intermediate, platform-independent instruction format called **bytecode**, performing lexical and syntax analysis (and raising `SyntaxError` here if something's malformed).
 3. **Caching** — the bytecode is saved as a `.pyc` file inside a `__pycache__` directory. If the source hasn't changed, Python loads the cached `.pyc` next time and skips recompilation.
-4. **Execution by the PVM** — bytecode is fed to the Python Virtual Machine, the runtime engine that interprets and executes bytecode instructions one at a time, maintaining a stack of **frame objects** (one per function call) that hold local variables, the instruction pointer, and the evaluation stack.
+4. **Execution by the interpreter** — bytecode is executed by the CPython evaluation loop. The exact instruction set changes between Python releases. Execution state is represented by interpreter frames; Python-visible frame objects may be materialized when introspection/debugging needs them.
 5. **Machine Code Generation** — under the hood, each bytecode instruction is ultimately carried out via C code in the CPython interpreter that performs the corresponding low-level operation on the CPU.
 6. **Output** — the CPU executes that underlying machine code and produces the program's results.
 
@@ -130,7 +129,7 @@ def add(a, b):
     return a + b
 
 dis.dis(add)
-# Prints the actual bytecode instructions (LOAD_FAST, BINARY_ADD, RETURN_VALUE, etc.)
+# Opcode names and specialization details vary by Python release and build.
 ```
 Being able to say "I'd check this with `dis.dis()`" is a good way to show real familiarity with internals in an interview, not just memorized theory.
 
@@ -146,11 +145,11 @@ The **GIL** (Global Interpreter Lock) is specifically a **CPython** (and PyPy) i
 
 ## 4. Attribute Lookup — How `obj.attr` Actually Resolves
 
-When you write `obj.attr`, CPython doesn't just check `obj.__dict__` — it follows a defined algorithm (the core of Python's "data model"):
+When you write `obj.attr`, the default `object.__getattribute__` implementation follows a defined descriptor/instance/class lookup order. A custom `__getattribute__` can override this behavior:
 
-1. **Look up `attr` on `type(obj)` and its MRO** (the class hierarchy, via C3 linearization). If found and it's a **data descriptor** (defines both `__get__` and `__set__`, e.g. a `property`), it wins immediately — data descriptors take priority over instance attributes.
+1. **Look up `attr` on `type(obj)` and its MRO** (the class hierarchy, via C3 linearization). If found and it is a **data descriptor** (defines `__set__` or `__delete__`, usually alongside `__get__`, e.g. a `property`), it wins immediately — data descriptors take priority over instance attributes.
 2. **Look up `attr` in `obj.__dict__`** (the instance's own attributes). If found here, use it — *unless* step 1 already matched a data descriptor.
-3. **Fall back to the class-level result from step 1** if it was a plain attribute or a **non-data descriptor** (defines only `__get__`, e.g. a plain function/method).
+3. **Fall back to the class-level result from step 1** if it was a plain attribute or a **non-data descriptor** (defines `__get__` but neither `__set__` nor `__delete__`, e.g. a plain function/method).
 4. **Raise `AttributeError`** if nothing matched, unless the class defines `__getattr__`, which is called as a last resort.
 
 ```python
@@ -170,7 +169,7 @@ This ordering — **data descriptor > instance `__dict__` > non-data descriptor/
 
 ## 5. Frame Objects and the Call Stack
 
-Every function call creates a **frame object** — the PVM's record of that call's execution state:
+A function call has an **execution frame** — the interpreter's record of that call's execution state. In CPython 3.11+, the internal interpreter frame is distinct from the Python-level `frame` object exposed through introspection; the latter can be materialized lazily:
 
 - **Local variables** (the frame's own namespace).
 - **The instruction pointer** (which bytecode instruction is next).
@@ -197,7 +196,7 @@ This is exactly what the `traceback` module walks to print a stack trace, what d
 ## Notes & Gotchas Worth Knowing for Interviews
 
 - **Interning is a CPython implementation detail, not a language guarantee** — never rely on `is` for string value equality in real code; always use `==`.
-- **`sys.modules` caching means a module's top-level code runs exactly once per process** — subsequent imports are just dictionary lookups, which is also why `importlib.reload()` exists as an explicit escape hatch.
+- **`sys.modules` caches modules by import name** — repeated imports under the same name normally reuse the cached object rather than execute the source again. Explicit reloads, cache deletion, failed imports, or importing one file under multiple names can cause execution again.
 - **`.pyc` invalidation is based on the source's mtime/hash, not content diffing** — touching a file's timestamp without changing content can still trigger recompilation.
 - **Bytecode ≠ machine code** — bytecode is still interpreted by the PVM at runtime; this distinguishes Python from ahead-of-time compiled languages, and is the precise answer to "is Python compiled or interpreted?" (both, in a sense — compiled to bytecode, then interpreted).
 - **The GIL belongs to the CPython/PyPy implementations**, not to the Python language itself — Jython and IronPython don't have one, since they rely on their host VM's own concurrency model.

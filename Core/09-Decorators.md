@@ -1,3 +1,5 @@
+# Python Decorators: Fundamentals to Advanced Patterns
+
 ### What is a Decorator?
 
 At its simplest, **a decorator is a function that takes another function as an argument, adds some kind of functionality, and then returns another function.**
@@ -251,6 +253,8 @@ Swapping the order (`@italic` above `@bold`) changes the output to `<i><b>Hello<
 A decorator applied to a method needs its wrapper to also accept `self` (via `*args` typically handles this transparently, since `self` just becomes `args[0]`):
 
 ```python
+from functools import wraps
+
 def log_call(func):
     @wraps(func)
     def wrapper(*args, **kwargs):   # self flows through args automatically

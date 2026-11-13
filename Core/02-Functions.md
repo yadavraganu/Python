@@ -1,3 +1,5 @@
+# Python Functions: From Fundamentals to Advanced Concepts
+
 ## 1. The Anatomy of a Function
 
 Every function in Python is an instance of the `function` class. When you define one, Python creates an object in memory and binds it to the name you provided — the `def` statement is really just an assignment.

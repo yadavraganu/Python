@@ -1,3 +1,5 @@
+# pytest: Testing Python Applications
+
 ## 1. How pytest Works
 
 Understanding the pipeline explains most "why did pytest do that?" moments.
@@ -1085,17 +1087,18 @@ Find the cause (shared state, time, ordering, network); isolate with fixtures an
 Profile with `--durations`, widen the scope of expensive-but-safe fixtures, avoid real I/O, parallelize with `pytest-xdist`, and split slow tests behind a marker.
 
 **What changed recently in pytest?**
-8.4: tests returning non-`None` fail, `RaisesGroup`, async tests fail without a plugin. 9.0: built-in subtests, native TOML config, strict mode, Python 3.9 dropped. 9.1: deprecations for generator argvalues, instance-method class fixtures, `getfixturevalue` during teardown; new `--max-warnings` and `pytest.register_fixture`.
+8.4: tests returning non-`None` fail, `RaisesGroup`, async tests fail without a plugin. 9.0: built-in subtests, native TOML config, strict mode, Python 3.9 dropped. 9.1: deprecations for generator argvalues, instance-method class fixtures, `getfixturevalue` during teardown; new `--max-warnings` and `pytest.register_fixture`. 9.2: invalid `-c` paths are usage errors; parametrization `indirect`, `ids`, and `scope` are keyword-only.
 
 ## 20. Version Notes
 
-| Version | Notable changes (8.4, 9.0 and 9.1 are from the official release notes; 8.1 and 8.2 are from a distribution changelog summary, so check the official changelog if you depend on them) |
+| Version | Notable changes (8.1 and 8.2 are historical summaries; verify the official changelog if you depend on those details) |
 |---|---|
 | 8.1 | Namespace-package support; improved `--import-mode=importlib` |
 | 8.2 | Arguments from a file with `@filename`; `PYTEST_VERSION` environment variable |
 | 8.4 | Tests returning non-`None` now **fail**; `yield` in a test is an error; async tests fail without a plugin; `pytest.RaisesGroup`/`RaisesExc`; `collect_imported_tests` option; Python 3.8 dropped |
 | 9.0 | Built-in **subtests**; native TOML config (`[tool.pytest]`, `pytest.toml`); **strict mode**; `strict_parametrization_ids`; warning when config is split across files; Python 3.9 dropped |
 | 9.1 | Deprecations: generators/iterators as parametrize argvalues, class-scoped fixtures as instance methods, `request.getfixturevalue()` during teardown, `pytest.console_main`, `--pastebin`; `pytest.register_fixture()`; `--max-warnings`; `assertion_text_diff_style`; `approx` for `datetime`/`timedelta`; `caplog` captures non-propagating loggers; fixture-override resolution by visibility (mainly affects plugins); Python 3.15 support |
+| 9.2 | Invalid `-c` config paths are usage errors; parametrization `indirect`, `ids`, and `scope` arguments are keyword-only. |
 
 Deprecated items are scheduled for removal in **pytest 10**. Run your suite with warnings enabled to find them early.
 

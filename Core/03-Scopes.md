@@ -1,3 +1,5 @@
+# Python Scopes and Name Resolution
+
 ## Scopes in Python
 
 In Python, **scope** refers to the region of a program where a variable is **defined** and **accessible**. It determines the **visibility** and **lifetime** of a name. Python resolves variable names using a well-defined rule called the **LEGB Rule**.

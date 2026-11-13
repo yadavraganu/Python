@@ -1,3 +1,5 @@
+# Python Descriptors
+
 ## 1. What Is a Descriptor?
 
 A **descriptor** is any object whose class implements one or more of `__get__`, `__set__`, or `__delete__`. When such an object is stored as a **class attribute**, Python routes normal attribute access (`instance.attr`) through those methods instead of simply returning the stored value.
@@ -105,7 +107,7 @@ print(hasattr(F.f, "__get__"), hasattr(type(F.f), "__set__"))   # True False —
 This distinction controls **priority** during attribute lookup.
 
 - **Data descriptor** — defines `__set__` and/or `__delete__` (with or without `__get__`). **Always wins** over an entry in the instance's `__dict__`.
-- **Non-data descriptor** — defines only `__get__`. **Loses** to an entry in the instance's `__dict__` if one exists.
+- **Non-data descriptor** — defines `__get__` but neither `__set__` nor `__delete__`. **Loses** to an entry in the instance's `__dict__` if one exists.
 
 ```python
 class NonDataDescriptor:

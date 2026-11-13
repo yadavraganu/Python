@@ -1,3 +1,5 @@
+# Object-Oriented Programming in Python
+
 ## Contents
 
 - [Part I — Foundations](#part-i--foundations)

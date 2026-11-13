@@ -1,3 +1,5 @@
+# Python Exceptions and Error Handling
+
 ## 1. The Exception Hierarchy
 
 All exceptions in Python are objects, and every exception class inherits — directly or indirectly — from `BaseException`.

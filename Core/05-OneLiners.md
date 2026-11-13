@@ -1,6 +1,6 @@
 # Python One-Liners Cheat Sheet
 
-<br></br>
+
 
 ## 1. Basics and Quick Expressions
 
@@ -74,7 +74,7 @@ first, *middle, last = [1, 2, 3, 4, 5]
 square = lambda x: x * x
 ```
 
-<br></br>
+
 
 ## 2. Lists, Tuples, Sets, Dicts
 
@@ -182,7 +182,7 @@ from collections import deque
 dq = deque(L); dq.rotate(1)     # rotate right by 1
 ```
 
-<br></br>
+
 
 ## 3. Strings, Text and Regex
 
@@ -237,7 +237,7 @@ s.startswith("pre"); s.endswith("fix")
 clean = s.translate(str.maketrans("", "", ",.!?"))
 ```
 
-<br></br>
+
 
 ## 4. File, OS, Shell and Quick Scripting
 
@@ -296,7 +296,7 @@ python -m http.server 8000
 cat file | python -c "import sys; print(sum(int(x) for x in sys.stdin))"
 ```
 
-<br></br>
+
 
 ## 5. Networking, Web Requests, JSON, CSV
 
@@ -342,7 +342,7 @@ with open("out.csv", "w", newline="") as f:
     writer.writeheader(); writer.writerows(rows)
 ```
 
-<br></br>
+
 
 ## 6. Data Science, Numeric and Small Algorithms
 
@@ -408,7 +408,7 @@ mn, mx = min(L), max(L)
 norm = [(x - mn) / (mx - mn) if mx > mn else 0.0 for x in L]   # without the guard, [5, 5, 5] raises ZeroDivisionError
 ```
 
-<br></br>
+
 
 ## 7. Concurrency, Timing, Debugging, Introspection
 
@@ -474,7 +474,7 @@ logging.info("started with n=%s", n)
 assert len(L) > 0, "L must not be empty"      # stripped entirely under `python -O`, so never use it for input validation
 ```
 
-<br></br>
+
 
 ## Favorite Gotchas to Remember
 

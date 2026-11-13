@@ -7,6 +7,8 @@ Within this private heap, Python's small-object allocator (`pymalloc`) handles t
 - **Reference counting** (primary mechanism)
 - **Generational (cyclic) garbage collection** (a backstop for reference cycles)
 
+> **Version-specific note:** the guide below describes the traditional three-generation collector used by Python 3.13 and restored in **Python 3.14.5 and later**. Python 3.14.0–3.14.4 briefly shipped an incremental two-generation collector: generation 1 was removed, and `gc.collect(1)` performed an incremental collection. That design was reverted in 3.14.5 after production memory-pressure reports. When discussing GC internals, state the exact Python minor/patch version; do not apply the temporary 3.14.0–3.14.4 behavior to 3.14.5+ or 3.15.
+>
 ## 1. Reference Counting
 
 Every object has a reference count — an integer tracking how many references point to it (`ob_refcnt` in the `PyObject` header).

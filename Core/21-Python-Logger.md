@@ -1,3 +1,5 @@
+# Logging in Python
+
 ## 1. Why Not Just Use `print()`
 
 `print()` has no levels, no timestamps, no destinations besides stdout, and no way to turn it off in production without deleting code. The built-in `logging` module solves all of this: it lets you tag messages by severity, route them to files/consoles/network sockets, format them consistently, and control verbosity per-module without touching your source code.

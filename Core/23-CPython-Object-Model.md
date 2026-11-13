@@ -4,7 +4,7 @@ This covers what actually happens in memory beneath Python's high-level syntax �
 
 ## 1. The CPython Object Model — `PyObject`
 
-Every single Python object — an `int`, a `list`, a custom class instance, even a function is, in C, a `PyObject*` (a pointer to a `PyObject` struct). Every such struct shares a common header:
+In a conventional CPython build, Python objects such as an `int`, `list`, custom class instance, or function are represented through `PyObject`-compatible C structures and exposed internally through pointers. A simplified common object header contains:
 
 ```c
 typedef struct _object {
@@ -13,7 +13,7 @@ typedef struct _object {
 } PyObject;
 ```
 
-- **`ob_refcnt`** — The reference count. This is the mechanism `sys.getrefcount(obj)` reads, and it's the foundation of CPython's **primary** garbage-collection strategy: when it hits zero, the object is immediately deallocated.
+- **`ob_refcnt`** — Reference-count state. In a conventional GIL-enabled CPython build, when an ordinary object's reference count reaches zero it is normally deallocated immediately. Immortal objects and free-threaded builds use additional implementation techniques, so `sys.getrefcount()` is not a universal measure of object lifetime.
 - **`ob_type`** — A pointer to the object's type object, which is itself a `PyObject` (specifically a `PyTypeObject`) describing the class: its methods, its `__dict__`, its MRO. This is what `type(obj)` actually returns, and why "everything is an object, including classes" is literally true at the C level — classes are instances of `type`.
 
 ```python
@@ -27,13 +27,13 @@ print(type(list) is type)      # True — even `list` itself is an instance of `
 
 ## 2. Memory Allocation — `pymalloc`
 
-Typical Python programs allocate huge numbers of small, short-lived objects (every `int`, every small `list`, every stack frame). Calling the OS-level `malloc()` for each one would be far too slow and fragment memory badly. CPython instead uses a custom small-object allocator, **`pymalloc`**, layered in three tiers:
+Typical Python programs allocate huge numbers of small, short-lived objects (temporary integers, containers, and execution state). Calling the OS-level allocator for each one would be far too slow and fragment memory badly. In conventional GIL-enabled CPython builds, the default small-object allocator is **`pymalloc`**, layered in three tiers:
 
-- **Arenas** — Large chunks (256 KB) requested directly from the OS.
+- **Arenas** — Large chunks requested from the OS: typically 256 KiB on 32-bit builds and 1 MiB on 64-bit builds.
 - **Pools** — Each arena is divided into pools (4 KB each), and each pool is dedicated to allocations of one specific *size class*.
 - **Blocks** — Each pool is divided into fixed-size blocks; a request for, say, a 32-byte object is served from the pool whose blocks are sized for that class.
 
-`pymalloc` handles objects **under ~512 bytes**; larger allocations fall through to the system allocator directly. This tiered design means small-object allocation and deallocation are extremely cheap — mostly bookkeeping, no syscalls — which is a big part of why Python's object churn (creating/discarding tons of small objects) doesn't tank performance as badly as it otherwise would.
+`pymalloc` handles allocations **up to 512 bytes**; larger allocations fall through to the raw/system allocator. This description applies to the conventional build: free-threaded CPython uses mimalloc as its required allocator for the object/memory domains. This tiered design means small-object allocation and deallocation are extremely cheap — mostly bookkeeping, no syscalls — which is a big part of why Python's object churn (creating/discarding tons of small objects) doesn't tank performance as badly as it otherwise would.
 
 This also connects to why CPython rarely returns memory to the OS eagerly — arenas are only freed when *completely* empty, so a program that briefly allocates a huge number of small objects can keep that memory reserved (though not leaked) for the rest of the process's life.
 
@@ -72,14 +72,15 @@ Before Python 3.3, every `str` internally used a fixed width per character (effe
 | Representation | Used when the string contains... | Bytes per char |
 |---|---|---|
 | Latin-1 (`PyASCIIObject`/compact) | Only codepoints ≤ 0xFF | 1 |
-| UCS-2 | At least one codepoint > 0xFF but ≤ 0xFFFF | 2 |
-| UCS-4 | At least one codepoint > 0xFFFF (e.g., many emoji) | 4 |
+| 2-byte kind | At least one codepoint > 0xFF but ≤ 0xFFFF | 2 |
+| 4-byte kind | At least one codepoint > 0xFFFF (e.g., many emoji) | 4 |
 
 ```python
 import sys
 print(sys.getsizeof("hello"))     # smaller — pure ASCII/Latin-1 storage
-print(sys.getsizeof("héllo"))      # larger — needs at least Latin-1/UCS-2 range... 
-print(sys.getsizeof("👋"))          # larger still — needs UCS-4 for a codepoint this high
+print(sys.getsizeof("héllo"))      # same one-byte kind as ASCII: é is in Latin-1
+print(sys.getsizeof("Ā"))           # requires a two-byte kind
+print(sys.getsizeof("👋"))          # requires a four-byte kind
 ```
 
 This is a nice concrete answer if asked "how does Python store Unicode strings internally" — it's not one-size-fits-all, and the choice is made per-string automatically at creation time, invisible at the Python level except through memory-size differences.

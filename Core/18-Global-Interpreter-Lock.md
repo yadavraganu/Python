@@ -1,14 +1,14 @@
 # The Global Interpreter Lock (GIL)
 
-The GIL is a mutex (lock) in CPython that protects access to Python objects, preventing multiple threads from executing Python bytecode at the same time. Even on a 16-core machine, only one thread in a given process is running Python bytecode at any instant.
+In a conventional GIL-enabled CPython build, the Global Interpreter Lock (GIL) is a process/interpreter-level mutex that protects interpreter and object state. It permits only one thread at a time to execute Python bytecode in that interpreter, so adding CPU cores alone does not make pure-Python threads execute in parallel. This statement does not describe free-threaded CPython builds or sub-interpreters configured with separate GILs.
 
-**Scope:** the GIL is **per-process** and an implementation detail of **CPython** (and PyPy), not part of the Python language. Jython and IronPython have no GIL because they rely on their host VM's concurrency model.
+**Scope:** the GIL is an implementation detail of some Python runtimes/builds, not part of the Python language. Conventional CPython builds have a GIL per interpreter (normally one interpreter in a process); CPython sub-interpreters can be configured with separate GILs. Standard PyPy builds also use a GIL. Jython and IronPython do not use CPython's GIL model.
 
 ## 1. Why Does the GIL Exist?
 
 It looks like a bottleneck, but it was a pragmatic design choice, mainly about **memory management**.
 
-* **Reference counting:** CPython tracks object lifetime with a reference count on every object (`ob_refcnt`, see `CPython-Object-Model.md`). If two threads incremented or decremented the same count simultaneously, the count could be corrupted, causing memory leaks or, worse, freeing an object that's still in use. One global lock makes every refcount update safe without per-object locking.
+* **Reference counting:** CPython tracks object lifetime with a reference count on every object (`ob_refcnt`, see `23-CPython-Object-Model.md`). If two threads incremented or decremented the same count simultaneously, the count could be corrupted, causing memory leaks or, worse, freeing an object that's still in use. One global lock makes every refcount update safe without per-object locking.
 * **Simplicity for C extensions:** the early Python ecosystem grew around C extensions. The GIL let extension authors assume the interpreter state wouldn't change under them, without reasoning about fine-grained thread safety.
 * **Single-threaded speed:** one coarse lock is cheap. Fine-grained per-object locking adds overhead to *every* operation, which would have slowed the (far more common) single-threaded case.
 
@@ -17,7 +17,7 @@ It looks like a bottleneck, but it was a pragmatic design choice, mainly about *
 A thread must hold the GIL to run bytecode. It gives the GIL up in two ways:
 
 1. **Voluntarily, around blocking operations.** Before waiting on I/O (file reads, sockets), `time.sleep()`, or lock waits, the thread releases the GIL so another thread can run. This is why threads help I/O-bound work.
-2. **Forced, on a timer.** If a thread keeps running Python code, other threads waiting for the GIL request it, and after a **switch interval** (default 5 ms) the running thread is made to drop it at the next opportunity.
+2. **Scheduled switching.** If a thread keeps running Python code, other threads can request the GIL. The interpreter uses a **switch interval** (commonly 5 ms by default) to decide when to consider a switch at a safe opportunity; this is not a hard real-time preemption deadline.
 
 ```python
 import sys
@@ -41,13 +41,11 @@ def inc():
     counter += 1
 
 dis.dis(inc)
-# LOAD_GLOBAL counter
-# LOAD_CONST 1
-# BINARY_OP +=
-# STORE_GLOBAL counter
+# Conceptual operations: read counter, add one, write counter.
+# Exact bytecode instructions vary by Python release and specialization.
 ```
 
-If a switch lands after the load but before the store, two threads can read the same value and one update is lost. That's the race condition from `Threading-Multiprocessing.md`, and it happens even with the GIL. Use `threading.Lock` (or `queue.Queue`) for shared mutable state.
+If a switch lands after the load but before the store, two threads can read the same value and one update is lost. That's the race condition from `19-Threading-Multiprocessing.md`, and it happens even with the GIL. Use `threading.Lock` (or `queue.Queue`) for shared mutable state.
 
 Some single operations are effectively atomic in CPython because they compile to one bytecode (e.g. `list.append(x)`, `d[key] = value`), but treating that as a guarantee is fragile. It's an implementation detail, and free-threaded builds (below) make it a poor assumption.
 
@@ -90,7 +88,7 @@ Swap `Thread` for `multiprocessing.Process` and the time drops by roughly half o
 
 ## 5. Ways Around the GIL
 
-1. **Multiprocessing:** separate processes, each with its own interpreter, memory, and GIL. Real parallelism, at the cost of process startup, memory, and pickling of data between processes.
+1. **Multiprocessing:** separate processes, each with its own interpreter, memory, and GIL. Real parallelism, at the cost of process startup, memory, and inter-process data transfer.
 2. **C extensions / native libraries:** NumPy, pandas, and similar libraries do heavy work in C/C++/Rust and release the GIL while they do, so threads calling them can genuinely run in parallel.
 3. **`asyncio`:** doesn't bypass the GIL, but for I/O-bound work it gets high concurrency on one thread, so GIL contention never comes up.
 4. **Sub-interpreters:** since Python 3.12 (PEP 684), each sub-interpreter can have its **own GIL**, so multiple interpreters in one process can run in parallel. Python 3.14 exposes this through the standard library `concurrent.interpreters` module (PEP 734).
@@ -120,10 +118,10 @@ You can also control it at runtime with the `PYTHON_GIL` environment variable or
 ## Notes & Gotchas
 
 - **The GIL is a CPython implementation detail**, not a Python language rule. Jython and IronPython don't have one.
-- **The GIL exists to protect reference counts** (memory management), which is the answer to "why does it exist?"
+- **The GIL historically simplified safe access to CPython's shared interpreter and object state**, including reference-count updates and many internal data structures. Reference counting is an important part of the story, but saying it exists only to protect reference counts is too narrow.
 - **Threads still help I/O-bound work** because blocking operations release the GIL. For CPU-bound work, use `multiprocessing`, native libraries, or a free-threaded build.
 - **The GIL doesn't make your code thread-safe.** `counter += 1` is multiple bytecodes, and a thread switch between them loses updates. You still need locks.
-- **The switch interval is 5 ms** by default (`sys.getswitchinterval()`); a running thread is asked to release the GIL after that, and the OS decides who gets it next.
+- **The switch interval is commonly 5 ms** by default (`sys.getswitchinterval()`); it is an interpreter scheduling interval, not a hard real-time preemption guarantee. The OS and interpreter determine when another thread runs.
 - **CPU-bound threads can be slower than sequential code** because of contention for the GIL, a classic demo interviewers like.
-- **Each process has its own GIL**, which is exactly why multiprocessing achieves real parallelism.
+- **Each conventional CPython process has its own interpreter/GIL**, which is why multiprocessing can achieve parallelism. It is not the only route: sub-interpreters and optional free-threaded builds also matter.
 - **Free-threaded Python is optional and still evolving:** experimental in 3.13, officially supported but non-default in 3.14. Don't say "the GIL has been removed"; say "there's an optional no-GIL build."

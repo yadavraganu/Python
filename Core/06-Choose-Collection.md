@@ -1,3 +1,5 @@
+# Choosing the Right Python Collection
+
 ## Core Built-In Types
 
 | Type         | Mutability | Order | Duplicates | Lookup/Indexing | Insertion/Append  | Memory Footprint | Use Case Highlights |
