@@ -1,5 +1,11 @@
 # Python Descriptors
 
+> - A descriptor is an object with `__get__` / `__set__` / `__delete__` that lives as a **class** attribute and customizes how that one attribute is read, written, or deleted.
+> - Defines `__set__` or `__delete__` → **data descriptor** (beats the instance `__dict__`). Only `__get__` → **non-data descriptor** (the instance `__dict__` beats it).
+> - Store per-instance values on the **instance** (`obj.__dict__`), never on the descriptor itself (`self`).
+> - `property`, functions/methods, `classmethod`, `staticmethod`, `__slots__` and `cached_property` are all descriptors.
+> - Use `@property` for one attribute; write a custom descriptor when the same logic is reused across many attributes or classes.
+
 ## 1. What Is a Descriptor?
 
 A **descriptor** is any object whose class implements one or more of `__get__`, `__set__`, or `__delete__`. When such an object is stored as a **class attribute**, Python routes normal attribute access (`instance.attr`) through those methods instead of simply returning the stored value.
@@ -305,6 +311,8 @@ b.x = 9
 print(b.x)    # 9
 ```
 
+**Which one to use?** Default to Fix 1 (`obj.__dict__`). Use Fix 3 when the class uses `__slots__`. Reach for Fix 2 only when instances have no `__dict__` and you can't add slots; it is the slowest and has the hashability caveat above.
+
 ## 7. Building `@property` From Scratch
 
 `property` is literally a built-in data descriptor. Here's a functioning re-implementation:
@@ -501,40 +509,145 @@ These solve related but distinct problems:
 | `__getattr__` | The owning class | Any attribute not found normally | Fallback/proxy behavior, dynamic attributes |
 | `__getattribute__` | The owning class | **Every** attribute access | Rarely overridden directly; this is what implements descriptor lookup in the first place |
 
+**`@property` or a custom descriptor?** 
+If the logic belongs to one attribute of one class, use `@property`. If you would copy the same getter/setter pair across several attributes or classes (validation, type checks, unit conversion, logging), write one descriptor and reuse it. That is the whole point of descriptors, and it is why ORMs such as Django and SQLAlchemy use them for field access.
+
 ## 12. Performance Notes
 
 - Descriptor `__get__`/`__set__` calls add function-call overhead compared to a plain attribute — usually negligible, but avoid heavy descriptors in extremely hot loops.
 - `__slots__` (itself descriptor-based) removes the per-instance `__dict__`, saving memory at scale — useful for classes with millions of instances.
 - `cached_property` trades a small amount of memory (the cached value in `__dict__`) for avoiding repeated computation — a good default for expensive derived values that don't change.
 
-## 13. Common Pitfalls
+## 13. Common Gotchas
 
-1. **Storing state on `self` inside the descriptor** instead of on the instance — causes state to leak across all instances sharing that descriptor (see Section 6).
-2. **Forgetting `if obj is None: return self`** in `__get__` — breaks introspection like `ClassName.attribute`.
-3. **Defining `__set__` unintentionally** (even as a no-op) — turns a non-data descriptor into a data descriptor, changing priority versus the instance `__dict__`.
-4. **Using `__slots__` alongside a descriptor that assumes `obj.__dict__` exists** — it will fail; store the value in a named slot (Fix 3 in Section 6), or use a `WeakKeyDictionary` and include `"__weakref__"` in `__slots__`.
-5. **Not handling `__set_name__` when the same descriptor class backs several attributes** — without it, each attribute needs its storage key passed explicitly, which is easy to get wrong.
-6. **Expecting a descriptor without `__set__` to be read-only** — assignment silently shadows it in the instance `__dict__` (Section 2). Define `__set__` and raise.
-7. **Assigning to the attribute name on the *class*** (`W.x = 5`) replaces the descriptor entirely; `__set__` only intercepts assignment through an instance.
-8. **Attaching a descriptor after class creation** — `__set_name__` is never called for it.
-9. **Built-in `property` error wording:** a property without a setter raises `AttributeError: property 'x' of 'T' object has no setter` (3.12 wording; older versions said `can't set attribute`).
+**1. Assigning on the class replaces the descriptor; `__set__` is not called.** `__set__` only fires for *instance* assignment.
 
-## 14. Practice Exercises
+```python
+class A:
+    x = Positive()          # Positive from Section 8
 
-1. Write a `Choices` descriptor that only allows a value from a fixed set (e.g., `status = Choices("pending", "active", "closed")`).
-2. Build a `TypedList` descriptor that enforces every item appended to a list attribute matches a given type.
-3. Implement your own minimal `cached_property` from scratch, verifying it only computes the wrapped function once per instance.
-4. Create a `Range` descriptor that validates a numeric value falls between a min and max, raising `ValueError` otherwise.
-5. Combine two descriptors (e.g., `Positive` and `Typed`) on the same class and confirm both validations run when the attribute is set.
+A.x = -5                    # no validation: the descriptor is simply replaced
+a = A()
+a.x = -1                    # now a plain instance attribute, still no validation
+```
 
-## 15. Quick Reference
+**2. A descriptor stored on an instance does nothing.** The protocol is only triggered for objects found on the **class**.
 
-| Concept | Detail |
-| --- | --- |
-| Descriptor | Object whose class defines `__get__`, `__set__`, and/or `__delete__` |
-| Data descriptor | Has `__set__` and/or `__delete__` — always wins over instance `__dict__` |
-| Non-data descriptor | Has only `__get__` — loses to instance `__dict__` |
-| `__set_name__` | Auto-called with `(owner, name)` when the class body finishes |
-| `obj is None` in `__get__` | Means access happened via the class, not an instance |
-| Storage rule | Store per-instance state in `obj.__dict__`, not `self`, inside the descriptor |
-| Built on descriptors | `@property`, methods, `@classmethod`, `@staticmethod`, `__slots__`, `functools.cached_property` |
+```python
+class B:
+    def __init__(self):
+        self.x = Positive()   # just an ordinary attribute holding a Positive object
+```
+
+**3. `setattr(obj, self.public_name, ...)` inside `__set__` recurses forever.** It re-enters the same descriptor. Store under a different key (`"_" + name`) or write to `obj.__dict__` directly, as every example in this guide does.
+
+```python
+class Recursive:
+    def __set_name__(self, owner, name):
+        self.name = name
+    def __set__(self, obj, value):
+        setattr(obj, self.name, value)    # RecursionError
+```
+
+**4. A descriptor name can't also be a slot name.**
+
+```python
+class C:
+    __slots__ = ("x",)
+    x = Positive()      # ValueError: 'x' in __slots__ conflicts with class variable
+```
+
+Use a differently named slot for the storage, as in Fix 3 (`x` descriptor, `_x` slot).
+
+**5. Forgetting `obj is None`.** `Product.price` (class access) then crashes or returns nonsense. Return `self` in that case (Section 2).
+
+**6. Non-data descriptors can be shadowed.** A plain `instance.attr = value` silently hides them (Section 2). If the attribute must stay controlled, define `__set__`.
+
+## 14. Interview Questions and Answers
+
+### Fundamentals
+
+**Q1. What is a descriptor?**
+An object whose class defines `__get__`, `__set__` or `__delete__`, and which is stored as a **class attribute**. Python routes access to that attribute through those methods instead of returning the stored object directly.
+
+**Q2. What is the difference between a data and a non-data descriptor?**
+A data descriptor defines `__set__` and/or `__delete__`; a non-data descriptor defines only `__get__`. The difference is lookup priority: a data descriptor beats the instance `__dict__`, while a non-data descriptor loses to it. Example: `property` is data, functions and `cached_property` are non-data.
+
+**Q3. In what order does Python resolve `obj.attr`?**
+1. A data descriptor found on the class (via the MRO).
+2. The instance `__dict__`.
+3. A non-data descriptor or plain class attribute from the class.
+4. `__getattr__` if defined, otherwise `AttributeError`.
+
+**Q4. Why does `__get__` receive `obj` and `objtype`, and what does `obj is None` mean?**
+`obj` is the instance, `objtype` is the owning class. `obj is None` means the attribute was accessed through the class (`A.x`). By convention the descriptor returns itself in that case.
+
+**Q5. What does `__set_name__` do?**
+It is called once when the class body finishes executing and tells the descriptor which attribute name it was assigned to (Python 3.6+). It removes the need to pass the name manually, e.g. `Typed("age", int)`. It is **not** called for descriptors attached to the class afterwards.
+
+### How built-ins use descriptors
+
+**Q6. How does `@property` work?**
+`property` is a built-in data descriptor. `__get__` calls `fget(obj)`, `__set__` calls `fset(obj, value)`, `__delete__` calls `fdel(obj)`. Because it is a data descriptor, `self.attr = value` in `__init__` goes through the setter rather than writing straight to the instance dict.
+
+**Q7. Where do bound methods come from?**
+Functions are non-data descriptors. `obj.method` calls `function.__get__(obj, type(obj))`, which returns a bound method with `obj` attached as `self`. `classmethod.__get__` binds the class instead, and `staticmethod.__get__` returns the raw function.
+
+**Q8. Why is `cached_property` a non-data descriptor, and how do you invalidate it?**
+On first access it computes the value and stores it in `obj.__dict__` under the same name. Because it has no `__set__`, the instance dict wins on later lookups and the function never runs again. `del obj.attr` clears the cache. It needs an instance `__dict__`, so it doesn't work with plain `__slots__`.
+
+### Practical and tricky
+
+**Q9. A teammate wrote a descriptor that stores values on `self.value`, and two instances overwrite each other. Why?**
+The descriptor is a class attribute, so a single descriptor instance is shared by every object of the class. State must be stored per owning instance: in `obj.__dict__` (default), in a slot (with `__slots__`), or in a `WeakKeyDictionary` keyed by the instance.
+
+**Q10. How do you make an attribute truly read-only with a descriptor?**
+Define `__set__` and raise `AttributeError`. With only `__get__`, it is a non-data descriptor, so `obj.attr = x` silently creates an instance attribute that shadows it.
+
+**Q11. What happens on `A.x = 5` if `x` is a descriptor on `A`?**
+The descriptor is replaced on the class; `__set__` is not called. `__set__` only runs for assignment through an instance.
+
+**Q12. Descriptor vs `@property`: when would you choose each?**
+`@property` for per-attribute logic in one class. A descriptor when the same logic (validation, type checking, conversion, logging) is reused across several attributes or classes, since one class defines it and any number of attributes use it.
+
+**Q13. Descriptor vs `__getattr__` vs `__getattribute__`?**
+A descriptor controls one named attribute and lives on that attribute's own class. `__getattr__` is a fallback called only when normal lookup fails. `__getattribute__` runs on **every** access and is the method that actually implements descriptor lookup, so overriding it is rarely a good idea.
+
+**Q14. How does `__slots__` relate to descriptors?**
+Each name in `__slots__` becomes a member descriptor on the class that reads and writes a fixed slot in the instance, which is why slotted instances have no `__dict__` and use less memory.
+
+### Coding question
+
+**Q15. Write a reusable descriptor that validates a numeric range.**
+
+```python
+class Ranged:
+    def __init__(self, minimum=None, maximum=None):
+        self.minimum, self.maximum = minimum, maximum
+
+    def __set_name__(self, owner, name):
+        self.public = name
+        self.private = "_" + name
+
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self                      # class access
+        return getattr(obj, self.private)
+
+    def __set__(self, obj, value):
+        if self.minimum is not None and value < self.minimum:
+            raise ValueError(f"{self.public} must be >= {self.minimum}")
+        if self.maximum is not None and value > self.maximum:
+            raise ValueError(f"{self.public} must be <= {self.maximum}")
+        setattr(obj, self.private, value)    # per-instance storage, not self.value
+
+class Player:
+    health = Ranged(0, 100)
+    def __init__(self, health):
+        self.health = health                 # validated via __set__
+
+p = Player(50)
+p.health = 150                               # ValueError: health must be <= 100
+```
+
+Stores state per instance, uses `__set_name__` instead of a hard-coded name, handles `obj is None`, and writes under a private name so `setattr` doesn't recurse.
