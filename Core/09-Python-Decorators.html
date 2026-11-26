@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A self-contained Python decorators guide for data engineers: fundamentals, execution model, descriptors, async, typing, production patterns, troubleshooting and interview questions.">
+<title>Python Decorators — Interview & Architecture Guide</title>
+<style>
+:root{
+  --lava:#FF3621;--navy:#0B2026;--navy-2:#1B3139;--oat:#EEEDE9;--oat-light:#F9F7F4;--white:#FFFFFF;
+  --ink:#18282d;--muted:#637277;--line:#e4e3de;--soft:#f1efea;--green:#287a58;--amber:#94651b;--blue:#276579;
+  --sidebar:286px;--topbar:64px;--radius:14px;--shadow:0 14px 35px rgba(11,32,38,.07);
+  --sans:'DM Sans',Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'DM Mono',ui-monospace,SFMono-Regular,Consolas,'Liberation Mono',monospace;
+}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:calc(var(--topbar) + 22px)}body{margin:0;background:var(--oat-light);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.68}a{color:#b92b1c;text-decoration:none}a:hover{text-decoration:underline}button,input{font:inherit}button{cursor:pointer}
+.topbar{height:var(--topbar);position:fixed;inset:0 0 auto 0;z-index:50;background:rgba(249,247,244,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px 0 calc(var(--sidebar) + 28px)}
+.brand{display:flex;align-items:center;gap:11px;font-weight:800;color:var(--navy);letter-spacing:-.03em}.brand-mark{height:27px;width:27px;border-radius:8px;background:var(--lava);display:grid;place-items:center;color:white;font-weight:900;font-size:14px;box-shadow:0 5px 12px rgba(255,54,33,.24)}.top-meta{display:flex;align-items:center;gap:18px;color:var(--muted);font-size:12px}.top-meta strong{color:var(--navy)}.top-action{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 11px;color:var(--navy);font-size:12px;font-weight:700}.top-action:hover{border-color:var(--lava);color:#bd2f20}
+.sidebar{position:fixed;z-index:60;left:0;top:0;bottom:0;width:var(--sidebar);background:var(--navy);color:#dbe5e5;overflow-y:auto;padding:22px 16px 30px;scrollbar-width:thin;scrollbar-color:#35535b transparent}.side-head{display:flex;align-items:center;gap:10px;padding:6px 8px 20px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:17px}.side-head .brand{color:white}.side-sub{font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:#91a6aa;font-weight:800;margin:20px 9px 8px}.search-wrap{position:relative;margin:0 3px 18px}.search-wrap input{width:100%;height:39px;border:1px solid #365058;background:#142c33;border-radius:9px;padding:0 12px 0 35px;color:#fff;outline:none;font-size:12px}.search-wrap input::placeholder{color:#8da2a6}.search-wrap input:focus{border-color:var(--lava);box-shadow:0 0 0 3px rgba(255,54,33,.13)}.search-icon{position:absolute;top:8px;left:12px;color:#91a6aa}.nav-group{margin-bottom:9px}.nav-link{display:flex;gap:10px;align-items:flex-start;padding:7px 10px;border-radius:8px;color:#b8c8ca;font-size:12px;line-height:1.4;margin:2px 0;transition:.15s}.nav-link .num{font-family:var(--mono);font-size:10px;color:#6f8b91;min-width:19px;padding-top:1px}.nav-link:hover{background:#18343c;color:white;text-decoration:none}.nav-link.active{background:rgba(255,54,33,.14);color:white;box-shadow:inset 2px 0 var(--lava)}.nav-link.active .num{color:#ff8a7d}.nav-link.hidden{display:none}.side-foot{border-top:1px solid rgba(255,255,255,.1);margin:24px 5px 0;padding:14px 5px;color:#82989d;font-size:10px;line-height:1.6}
+.main{margin-left:var(--sidebar);padding-top:var(--topbar)}.container{max-width:1120px;margin:0 auto;padding:0 46px 90px}.breadcrumb{display:flex;align-items:center;gap:8px;color:#879397;font-size:11px;padding:21px 0 8px}.breadcrumb span:last-child{color:#33464b;font-weight:700}.hero{position:relative;overflow:hidden;margin:20px 0 36px;border-radius:22px;background:var(--navy);color:white;padding:52px 54px 45px;box-shadow:var(--shadow)}.hero:before{content:"";position:absolute;width:440px;height:440px;border:1px solid rgba(255,255,255,.1);border-radius:50%;right:-155px;top:-220px;box-shadow:0 0 0 45px rgba(255,255,255,.025),0 0 0 90px rgba(255,255,255,.02)}.hero:after{content:"";position:absolute;width:210px;height:210px;background:var(--lava);opacity:.95;border-radius:50%;right:95px;bottom:-160px;filter:blur(1px)}.eyebrow{font-size:10px;letter-spacing:.19em;text-transform:uppercase;color:#ff968b;font-weight:900;display:flex;align-items:center;gap:9px}.eyebrow:before{content:"";width:22px;height:2px;background:var(--lava)}h1{font-size:clamp(36px,5vw,57px);letter-spacing:-.055em;line-height:1.04;margin:18px 0 18px;max-width:690px}.hero p{color:#bed0d1;max-width:660px;font-size:16px;line-height:1.7;margin:0 0 28px}.hero-tags{display:flex;gap:8px;flex-wrap:wrap;position:relative;z-index:2}.pill{font-size:10px;font-weight:800;letter-spacing:.04em;border:1px solid rgba(255,255,255,.2);padding:6px 10px;border-radius:999px;color:#e8f0ef;background:rgba(255,255,255,.04)}.hero-bottom{display:flex;gap:24px;flex-wrap:wrap;margin-top:30px;color:#8fa8aa;font-size:11px;position:relative;z-index:2}.hero-bottom b{color:white;font-weight:700}
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:38px}.quick-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 17px;min-height:100px}.quick-card .k{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#829095;font-weight:800}.quick-card .v{font-size:19px;font-weight:800;letter-spacing:-.04em;color:var(--navy);margin-top:4px}.quick-card .s{font-size:11px;color:var(--muted)}
+section{margin:0 0 57px;scroll-margin-top:calc(var(--topbar) + 20px)}.section-kicker{color:var(--lava);font-size:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:900;margin-bottom:8px}.section-title{font-size:30px;line-height:1.15;letter-spacing:-.045em;color:var(--navy);margin:0 0 12px}.lead{font-size:16px;color:#526267;max-width:900px;margin:0 0 22px}.subhead{font-size:20px;letter-spacing:-.025em;color:var(--navy);margin:30px 0 10px}.minor{font-size:16px;color:var(--navy);margin:22px 0 8px}.muted{color:var(--muted)}p{margin:10px 0 15px}ul,ol{padding-left:23px;margin:10px 0 18px}li{padding-left:3px;margin:5px 0}strong{color:#20373d}hr{border:0;border-top:1px solid var(--line);margin:28px 0}
+.callout{border:1px solid var(--line);background:#fff;border-radius:12px;padding:16px 18px;margin:18px 0;display:flex;gap:13px;box-shadow:0 5px 16px rgba(11,32,38,.025)}.callout .ico{height:27px;min-width:27px;border-radius:8px;display:grid;place-items:center;background:#fce9e6;color:#c92e1d;font-size:13px;font-weight:900}.callout.info .ico{background:#e8f0f2;color:#276579}.callout.warn .ico{background:#fff2d9;color:#94651b}.callout.good .ico{background:#e4f2eb;color:#287a58}.callout p{margin:0;color:#4c5d62;font-size:13px}.callout b{color:var(--navy)}.card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:16px 0}.info-card{border:1px solid var(--line);background:#fff;border-radius:13px;padding:18px}.info-card h4{margin:0 0 7px;color:var(--navy);font-size:14px}.info-card p{margin:0;color:#5d6c71;font-size:12px}.tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;border-radius:5px;padding:3px 6px;background:#f1efea;color:#536368;margin:0 4px 5px 0}.tag.red{background:#ffebe8;color:#bd3020}.tag.green{background:#e5f2eb;color:#26744f}.tag.amber{background:#fff2d9;color:#91621a}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff;margin:16px 0 22px}table{border-collapse:collapse;width:100%;font-size:12px;min-width:650px}thead th{text-align:left;background:#f0efeb;color:#43565b;text-transform:uppercase;letter-spacing:.07em;font-size:10px;font-weight:900;padding:12px 14px;white-space:nowrap}td{padding:12px 14px;border-top:1px solid #eeede8;vertical-align:top;color:#536267}td:first-child{color:#1d3339;font-weight:700}tbody tr:hover{background:#fcfbf8}.yes{color:#287a58;font-weight:800}.no{color:#a34a40;font-weight:800}
+.code-card{background:var(--navy);color:#e4eded;border-radius:13px;overflow:hidden;margin:16px 0 21px;box-shadow:0 12px 25px rgba(11,32,38,.1)}.code-head{display:flex;align-items:center;justify-content:space-between;padding:9px 13px 9px 16px;background:#142d34;border-bottom:1px solid rgba(255,255,255,.08);font-size:10px;color:#94aaad;text-transform:uppercase;letter-spacing:.1em;font-weight:800}.code-head .left{display:flex;align-items:center;gap:9px}.dots{display:flex;gap:4px}.dots i{height:6px;width:6px;background:#557078;border-radius:50%}.copy-btn{border:1px solid #385159;color:#d6e1e1;background:#1b3a42;border-radius:7px;padding:5px 9px;font-size:10px;font-weight:800}.copy-btn:hover{border-color:#ff796b;color:#fff}.code-card pre{margin:0;padding:18px 19px 20px;overflow:auto;font:12px/1.75 var(--mono);tab-size:4;white-space:pre}.code-card code{font:inherit;color:#dbe7e7}.tok-key{color:#ff9b8e}.tok-str{color:#b9d98f}.tok-comment{color:#7e999e;font-style:italic}.tok-fn{color:#8ed3e0}.tok-num{color:#e6bd83}.tok-op{color:#c6d4d4}.inline-code{font:11px var(--mono);background:#eeece7;color:#8c2b20;border-radius:4px;padding:2px 5px}
+.diagram{border:1px solid var(--line);background:#fff;border-radius:14px;padding:18px;margin:18px 0 22px;overflow:auto}.diagram-title{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#859297;font-weight:900;margin-bottom:14px}.flow{display:flex;align-items:center;justify-content:center;gap:8px;min-width:620px}.node{min-width:118px;border:1px solid #dce1df;background:#f8f8f5;border-radius:10px;text-align:center;padding:13px 10px;font-size:11px;color:#415258;font-weight:700}.node strong{display:block;color:var(--navy);font-size:12px}.node.hot{border-color:#ffaaa0;background:#fff2ef}.node.dark{background:var(--navy);color:#a9c0c2;border-color:var(--navy)}.node.dark strong{color:white}.arrow{color:var(--lava);font-size:20px;font-weight:900}.diagram-note{font-size:11px;color:#7b898d;text-align:center;margin-top:13px}.stack{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:500px}.stack .node{width:70%;max-width:500px}.stack .down{font-size:15px;color:var(--lava);line-height:1}
+details.qa{background:#fff;border:1px solid var(--line);border-radius:11px;margin:9px 0;overflow:hidden}details.qa summary{padding:14px 17px;cursor:pointer;list-style:none;display:flex;align-items:flex-start;gap:12px;color:var(--navy);font-weight:750;font-size:13px}details.qa summary::-webkit-details-marker{display:none}details.qa summary:after{content:"+";margin-left:auto;color:var(--lava);font-size:18px;line-height:1;font-weight:500}details.qa[open] summary:after{content:"−"}details.qa summary .level{font-size:9px;white-space:nowrap;margin-top:2px;background:#f0efeb;color:#647276;border-radius:4px;padding:3px 6px;text-transform:uppercase;letter-spacing:.06em}details.qa .answer{padding:0 18px 16px 46px;color:#58676b;font-size:12px}details.qa .answer p{margin:5px 0 10px}details.qa .answer ul{margin:6px 0}
+.checklist{list-style:none;padding:0}.checklist li{position:relative;padding-left:27px;color:#58666b;font-size:13px}.checklist li:before{content:"✓";position:absolute;left:0;top:1px;height:17px;width:17px;border-radius:5px;background:#e7f2ec;color:#287a58;display:grid;place-items:center;font-size:11px;font-weight:900}.ref-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ref{display:block;padding:13px 15px;background:#fff;border:1px solid var(--line);border-radius:10px}.ref b{display:block;color:var(--navy);font-size:12px;margin-bottom:3px}.ref span{display:block;color:#7a888c;font-size:10px;overflow-wrap:anywhere}.ref:hover{border-color:#ff9a8e;text-decoration:none}.footer{border-top:1px solid var(--line);padding:24px 0 0;color:#879397;font-size:11px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}.mobile-menu{display:none;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--navy);padding:7px 10px;font-size:12px;font-weight:800}.overlay{display:none}
+@media(max-width:1050px){.container{padding:0 30px 70px}.topbar{padding-left:calc(var(--sidebar) + 20px)}.quick-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){:root{--sidebar:285px}.sidebar{transform:translateX(-100%);transition:transform .22s ease;box-shadow:14px 0 35px rgba(0,0,0,.2)}body.nav-open .sidebar{transform:translateX(0)}.overlay{position:fixed;inset:0;background:rgba(5,17,20,.48);z-index:55}body.nav-open .overlay{display:block}.main{margin-left:0}.topbar{padding:0 15px;gap:12px}.mobile-menu{display:block}.top-meta{gap:8px}.top-meta .verify{display:none}.container{padding:0 17px 55px}.hero{padding:36px 24px 32px;border-radius:16px;margin-top:14px}.hero:before{right:-250px}.hero:after{right:-35px}.hero p{font-size:14px}.section-title{font-size:26px}.quick-grid{gap:8px}.quick-card{padding:12px}.quick-card .v{font-size:17px}.card-grid,.ref-list{grid-template-columns:1fr}.flow{justify-content:flex-start}.top-action{padding:6px 8px}.breadcrumb{font-size:10px}}
+@media(max-width:420px){.quick-grid{grid-template-columns:1fr 1fr}.hero h1{font-size:36px}.hero-bottom{gap:12px}.top-meta{display:none}}
+@media print{body{background:#fff;color:#111;font-size:11pt}.sidebar,.topbar,.mobile-menu,.overlay,.copy-btn{display:none!important}.main{margin:0;padding:0}.container{max-width:none;padding:0 12mm}.hero{background:#fff;color:#111;border:2px solid var(--navy);box-shadow:none;padding:24px}.hero p,.hero-bottom{color:#333}.hero-bottom b,.hero h1{color:#111}.hero:before,.hero:after{display:none}.hero-tags .pill{border-color:#aaa;color:#333}.quick-card,.info-card,.callout,.table-wrap,.diagram,details.qa{break-inside:avoid;box-shadow:none}.code-card{background:#f5f5f5;color:#111;break-inside:avoid}.code-head{background:#e9e9e9;color:#333}.code-card code{color:#111}.code-card pre{white-space:pre-wrap;overflow-wrap:anywhere}.tok-key,.tok-str,.tok-comment,.tok-fn,.tok-num{color:#333}a{color:#111;text-decoration:underline}section{break-inside:auto;margin-bottom:30px}details.qa .answer{display:block}details.qa summary:after{display:none}.footer{color:#333}}
+</style>
+</head>
+<body>
+<div class="overlay" id="overlay"></div>
+<aside class="sidebar" id="sidebar" aria-label="Guide navigation">
+  <div class="side-head"><div class="brand-mark">Py</div><div><div class="brand">Engineering Notes</div><div style="font-size:9px;color:#8fa6aa;letter-spacing:.12em;text-transform:uppercase;margin-top:2px">Interview Library</div></div></div>
+  <div class="search-wrap"><span class="search-icon">⌕</span><input id="navSearch" type="search" placeholder="Search this guide…" aria-label="Search navigation"></div>
+  <div class="side-sub">Foundations</div>
+  <nav id="sideNav">
+    <div class="nav-group"><a class="nav-link" href="#fundamentals"><span class="num">01</span>Decorator fundamentals</a><a class="nav-link" href="#execution"><span class="num">02</span>Execution & evaluation model</a><a class="nav-link" href="#arguments"><span class="num">03</span>Arguments, returns & metadata</a><a class="nav-link" href="#factories"><span class="num">04</span>Factories & optional arguments</a><a class="nav-link" href="#stacking"><span class="num">05</span>Stacking & ordering</a></div>
+    <div class="side-sub">Advanced Python</div>
+    <div class="nav-group"><a class="nav-link" href="#methods"><span class="num">06</span>Methods & descriptors</a><a class="nav-link" href="#async"><span class="num">07</span>Async, generators & contextlib</a><a class="nav-link" href="#classes"><span class="num">08</span>Class decorators & callable classes</a><a class="nav-link" href="#typing"><span class="num">09</span>Typing & introspection</a><a class="nav-link" href="#stdlib"><span class="num">10</span>Standard-library decorators</a></div>
+    <div class="side-sub">Production Engineering</div>
+    <div class="nav-group"><a class="nav-link" href="#patterns"><span class="num">11</span>Production patterns</a><a class="nav-link" href="#dataengineering"><span class="num">12</span>Data engineering applications</a><a class="nav-link" href="#quality"><span class="num">13</span>Testing, CI/CD & operations</a><a class="nav-link" href="#performance"><span class="num">14</span>Performance, cost & trade-offs</a><a class="nav-link" href="#security"><span class="num">15</span>Security & reliability</a><a class="nav-link" href="#troubleshooting"><span class="num">16</span>Troubleshooting & anti-patterns</a></div>
+    <div class="side-sub">Interview preparation</div>
+    <div class="nav-group"><a class="nav-link" href="#scenarios"><span class="num">17</span>Architecture case studies</a><a class="nav-link" href="#interview"><span class="num">18</span>Interview Q&A</a><a class="nav-link" href="#quickref"><span class="num">19</span>Quick reference & glossary</a><a class="nav-link" href="#references"><span class="num">20</span>Official references</a></div>
+  </nav>
+  <div class="side-foot">Python language & standard library<br>Verified against the official Python 3.15 documentation on 26 Nov 2026.</div>
+</aside>
+<header class="topbar">
+  <div style="display:flex;align-items:center;gap:12px"><button class="mobile-menu" id="mobileMenu" aria-label="Open navigation">☰ Menu</button><div class="brand"><div class="brand-mark">Py</div><span>Python Decorators</span></div></div>
+  <div class="top-meta"><span class="verify">Verified <strong>26 Nov 2026</strong></span><button class="top-action" onclick="window.print()">Print / Save PDF</button></div>
+</header>
+<main class="main"><div class="container">
+  <div class="breadcrumb"><span>Engineering Library</span><span>›</span><span>Python</span><span>›</span><span>Decorators</span></div>
+  <div class="hero">
+    <div class="eyebrow">Technical interview & architecture guide</div>
+    <h1>Python<br>Decorators</h1>
+    <p>From first principles to production patterns. Understand how decorators transform callables, how Python applies them, where descriptors and async semantics matter, and how to use them safely in data platforms.</p>
+    <div class="hero-tags"><span class="pill">BEGINNER → ARCHITECT</span><span class="pill">PYTHON 3.15 DOCS</span><span class="pill">DATA ENGINEERING FOCUS</span><span class="pill">SELF-CONTAINED</span></div>
+    <div class="hero-bottom"><span><b>Topic</b> &nbsp;Function & class decorators</span><span><b>Primary source</b> &nbsp;Official Python documentation</span><span><b>Verification</b> &nbsp;26 November 2026</span></div>
+  </div>
+
+  <section id="fundamentals">
+    <div class="section-kicker">01 / Foundations</div><h2 class="section-title">Decorator fundamentals</h2>
+    <p class="lead">A decorator is a callable that receives an object—commonly a function or class—and returns a replacement or modified object. The common function-decorator pattern returns a wrapper that adds behavior before, after or around the original call.</p>
+    <h3 class="subhead">Why decorators are possible</h3>
+    <p>Python functions are first-class objects. A function can be assigned to a variable, passed as an argument, returned from another function, stored in a data structure and inspected at runtime. A decorator uses these capabilities to separate cross-cutting behavior from a function's core business logic.</p>
+    <div class="card-grid"><div class="info-card"><h4>Input</h4><p>The original callable, often named <span class="inline-code">func</span>. It may be a plain function, method function, coroutine function or callable object.</p></div><div class="info-card"><h4>Transformation</h4><p>The decorator may construct a wrapper, register the callable, attach attributes, mutate a class or return a descriptor/callable proxy.</p></div></div>
+    <h3 class="subhead">Manual decoration</h3>
+    <div class="code-card"><div class="code-head"><div class="left"><span class="dots"><i></i><i></i><i></i></span>Python · no special syntax</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">def make_pretty(func):
+    def wrapper():
+        print("I am being decorated!")
+        func()
+    return wrapper
+
+
+def ordinary_function():
+    print("I am an ordinary function.")
+
+# Explicitly replace the original name with the decorated callable.
+decorated_func = make_pretty(ordinary_function)
+decorated_func()</code></pre></div>
+    <p>Output:</p><div class="code-card"><div class="code-head"><div class="left">Console</div><button class="copy-btn">Copy</button></div><pre><code>I am being decorated!
+I am an ordinary function.</code></pre></div>
+    <h3 class="subhead">The <span class="inline-code">@</span> form</h3>
+    <div class="code-card"><div class="code-head"><div class="left"><span class="dots"><i></i><i></i><i></i></span>Python · equivalent syntax</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">@make_pretty
+def ordinary_function():
+    print("I am an ordinary function.")
+
+ordinary_function()</code></pre></div>
+    <p>The decorated definition is equivalent to <span class="inline-code">ordinary_function = make_pretty(ordinary_function)</span>. The name is rebound to the decorator's returned object. The original function object still exists if another reference to it was retained, or is reachable through <span class="inline-code">__wrapped__</span> when the decorator uses <span class="inline-code">functools.wraps</span>.</p>
+    <div class="callout good"><div class="ico">✓</div><p><b>Important generalization.</b> “A decorator returns another function” describes the most common wrapper pattern, not the full language rule. A decorator must return a callable-compatible replacement for the use case, but class decorators, descriptor-producing decorators such as <span class="inline-code">property</span>, and registration decorators demonstrate that the returned object need not be a plain Python function.</p></div>
+  </section>
+
+  <section id="execution">
+    <div class="section-kicker">02 / Runtime model</div><h2 class="section-title">Execution & evaluation model</h2>
+    <p class="lead">The most important distinction is between applying a decorator and later invoking the decorated callable. Decoration is part of executing the definition statement; wrapper logic typically runs when the resulting object is called.</p>
+    <div class="diagram"><div class="diagram-title">Function definition lifecycle</div><div class="flow"><div class="node"><strong>Execute def</strong>Build function object</div><div class="arrow">→</div><div class="node hot"><strong>Evaluate decorator</strong>Apply transformation</div><div class="arrow">→</div><div class="node"><strong>Rebind name</strong>Store replacement</div><div class="arrow">→</div><div class="node dark"><strong>Call later</strong>Wrapper behavior</div></div><div class="diagram-note">At module scope, the definition usually runs during import. Inside another function, it runs when execution reaches that nested definition.</div></div>
+    <h3 class="subhead">Definition time versus call time</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · observe when each line runs</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">def announce(func):
+    print(f"Decorating {func.__name__}")  # definition/decorating time
+
+    def wrapper(*args, **kwargs):
+        print("Wrapper runs now")           # call time
+        return func(*args, **kwargs)
+
+    return wrapper
+
+@announce
+def greet():
+    print("Hello")
+
+print("Between definition and call")
+greet()</code></pre></div>
+    <p>The <span class="inline-code">Decorating greet</span> message appears while Python executes the decorated definition, before the later call. Only the wrapper's body is deferred. “At import time” is a useful module-level shorthand, but technically the rule is <b>when execution reaches the definition</b>; imports are merely one common place that happens.</p>
+    <h3 class="subhead">Decorator application and stacking</h3>
+    <p>For stacked decorators, the bottom decorator is applied to the original function first, then the next decorator wraps that result. The language reference describes this as nested application.</p>
+    <div class="diagram"><div class="diagram-title">Stacked decorator call path</div><div class="stack"><div class="node hot"><strong>@outer</strong>Applied last · outer wrapper</div><div class="down">↓ invocation enters outer layer</div><div class="node"><strong>@inner</strong>Applied first · inner wrapper</div><div class="down">↓</div><div class="node dark"><strong>Original function</strong>Core implementation</div></div><div class="diagram-note">Application order: bottom-up. Call-time entry: outside-in. Return unwinds in the reverse direction.</div></div>
+    <div class="callout warn"><div class="ico">!</div><p><b>Side effects to avoid.</b> A decorator can execute code during module import. Avoid opening database connections, making remote API calls, loading large datasets or doing environment-dependent work while applying decorators. Prefer lightweight registration and defer external work until invocation or explicit application startup.</p></div>
+    <h3 class="subhead">The formal rewrite</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Equivalent nested application</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">@outer(config="x")
+@inner
+def run():
+    ...
+
+# Conceptual equivalent:
+def run():
+    ...
+run = outer(config="x")(inner(run))</code></pre></div>
+    <p>The decorator expression is evaluated in the scope containing the definition. Its result is called with the function object as its sole positional argument. The returned object is bound to the function name. A decorated name can therefore refer to an object whose type and behavior differ from the original function.</p>
+  </section>
+
+  <section id="arguments">
+    <div class="section-kicker">03 / Core implementation</div><h2 class="section-title">Arguments, return values & metadata</h2>
+    <p class="lead">A general-purpose wrapper must preserve the wrapped callable's calling convention, return value, exception behavior and useful metadata. The standard starting point is <span class="inline-code">*args</span>, <span class="inline-code">**kwargs</span> and <span class="inline-code">functools.wraps</span>.</p>
+    <h3 class="subhead">The three common failure modes</h3>
+    <div class="table-wrap"><table><thead><tr><th>Problem</th><th>Incorrect pattern</th><th>Correct principle</th></tr></thead><tbody><tr><td>Arguments</td><td>Wrapper accepts no parameters while the target does.</td><td>Forward positional and keyword arguments transparently.</td></tr><tr><td>Return value</td><td>Call target but discard its result.</td><td><span class="inline-code">return func(*args, **kwargs)</span>.</td></tr><tr><td>Metadata</td><td>Wrapper exposes its own name/docstring.</td><td>Use <span class="inline-code">@wraps(func)</span> and retain the wrapped chain.</td></tr><tr><td>Exceptions</td><td>Catch and suppress all errors without a contract.</td><td>Propagate by default; handle only explicitly intended exception classes.</td></tr></tbody></table></div>
+    <h3 class="subhead">A robust synchronous template</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · reusable wrapper template</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">from functools import wraps
+from time import perf_counter
+import logging
+
+logger = logging.getLogger(__name__)
+
+def timed(func):
+    """Log elapsed wall-clock time and preserve the function contract."""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        started = perf_counter()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            elapsed = perf_counter() - started
+            logger.info("%s completed in %.4fs", func.__qualname__, elapsed)
+    return wrapper
+
+@timed
+def transform_batch(rows, *, strict=False):
+    return [row for row in rows if row is not None]
+
+result = transform_batch([1, None, 2], strict=True)</code></pre></div>
+    <p><span class="inline-code">try/finally</span> records elapsed time on both success and failure. The decorator does not change the exception: a raised exception continues propagating after the <span class="inline-code">finally</span> block. In production, use a configured logger rather than printing to stdout.</p>
+    <h3 class="subhead">What <span class="inline-code">functools.wraps</span> does</h3>
+    <p><span class="inline-code">wraps(wrapped)</span> is a convenience decorator around <span class="inline-code">update_wrapper</span>. By default, it copies selected attributes such as module, name, qualified name, annotations, type parameters and docstring; updates the wrapper's attribute dictionary from the wrapped callable; and adds <span class="inline-code">__wrapped__</span>, pointing to the immediate wrapped object.</p>
+    <div class="table-wrap"><table><thead><tr><th>Attribute / API</th><th>Purpose</th><th>Why it matters</th></tr></thead><tbody><tr><td><span class="inline-code">__name__</span></td><td>Function's short name.</td><td>Readable logs, debugging and docs.</td></tr><tr><td><span class="inline-code">__qualname__</span></td><td>Qualified name including lexical nesting.</td><td>Disambiguates nested functions and methods.</td></tr><tr><td><span class="inline-code">__doc__</span></td><td>Docstring.</td><td>Help output and generated documentation.</td></tr><tr><td><span class="inline-code">__annotations__</span></td><td>Parameter and return annotations.</td><td>Introspection and tooling.</td></tr><tr><td><span class="inline-code">__type_params__</span></td><td>Runtime generic type parameters on modern functions.</td><td>Preserving generic metadata (copied by default from Python 3.12).</td></tr><tr><td><span class="inline-code">__dict__</span></td><td>Custom function attributes.</td><td>Retains application/framework metadata unless customized.</td></tr><tr><td><span class="inline-code">__wrapped__</span></td><td>Reference to wrapped callable.</td><td>Enables unwrapping and signature inspection.</td></tr><tr><td><span class="inline-code">inspect.unwrap()</span></td><td>Follows wrapper links.</td><td>Accesses the original callable after multiple wrappers.</td></tr><tr><td><span class="inline-code">inspect.signature()</span></td><td>Returns callable signature.</td><td>Follows <span class="inline-code">__wrapped__</span> by default.</td></tr></tbody></table></div>
+    <div class="code-card"><div class="code-head"><div class="left">Python · introspection</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">from functools import wraps
+from inspect import signature, unwrap
+
+def audit(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+@audit
+def load_table(table: str, limit: int = 100) -> list[dict]:
+    """Load rows from a logical table."""
+    return []
+
+print(load_table.__name__)              # load_table
+print(load_table.__doc__)               # original docstring
+print(signature(load_table))            # (table: str, limit: int = 100) -> ...
+print(unwrap(load_table) is load_table.__wrapped__)  # True</code></pre></div>
+    <div class="callout info"><div class="ico">i</div><p><b>Metadata is not magic.</b> <span class="inline-code">wraps</span> improves introspection, but the wrapper still accepts <span class="inline-code">*args, **kwargs</span> at runtime. It does not automatically enforce the original signature or make a type checker infer every transformation. Use type annotations such as <span class="inline-code">ParamSpec</span> and <span class="inline-code">TypeVar</span> for static typing.</p></div>
+  </section>
+
+  <section id="factories">
+    <div class="section-kicker">04 / Parameterized decorators</div><h2 class="section-title">Decorator factories & optional arguments</h2>
+    <p class="lead">When the decorator itself needs configuration—retry count, timeout, permission name, cache size or metric label—an outer function acts as a factory and returns the actual decorator.</p>
+    <h3 class="subhead">Three-layer pattern</h3>
+    <div class="diagram"><div class="diagram-title">A configured decorator has three layers</div><div class="stack"><div class="node hot"><strong>Factory</strong><span>retry(attempts=3)</span><br>captures configuration</div><div class="down">↓ returns</div><div class="node"><strong>Decorator</strong><span>decorate(func)</span><br>receives target callable</div><div class="down">↓ returns</div><div class="node dark"><strong>Wrapper</strong><span>wrapper(*args, **kwargs)</span><br>executes on invocation</div></div></div>
+    <div class="code-card"><div class="code-head"><div class="left">Python · configurable repeat factory</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">from functools import wraps
+
+def repeat(times):
+    if times < 1:
+        raise ValueError("times must be at least 1")
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            results = []
+            for _ in range(times):
+                results.append(func(*args, **kwargs))
+            return results
+        return wrapper
+    return decorator
+
+@repeat(times=3)
+def greet(name):
+    print(f"Hello, {name}!")
+    return name
+
+names = greet("Ada")</code></pre></div>
+    <p>The result contract here is intentionally a list of three results. That is a behavior change from the original function's single result and should be clearly documented. A decorator should not silently change the return shape unless that is its explicit purpose.</p>
+    <h3 class="subhead">Support both <span class="inline-code">@decorator</span> and <span class="inline-code">@decorator(...)</span></h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · optional decorator arguments</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">from functools import wraps
+
+def repeat(func=None, *, times=1):
+    if times < 1:
+        raise ValueError("times must be at least 1")
+
+    def decorate(target):
+        @wraps(target)
+        def wrapper(*args, **kwargs):
+            result = None
+            for _ in range(times):
+                result = target(*args, **kwargs)
+            return result
+        return wrapper
+
+    return decorate if func is None else decorate(func)
+
+@repeat
+def run_once():
+    print("once")
+
+@repeat(times=2)
+def run_twice():
+    print("twice")</code></pre></div>
+    <p>With bare <span class="inline-code">@repeat</span>, Python passes the function directly as <span class="inline-code">func</span>. With <span class="inline-code">@repeat(times=2)</span>, the factory is called first, so <span class="inline-code">func</span> remains <span class="inline-code">None</span> and the factory returns the real decorator.</p>
+    <div class="callout warn"><div class="ico">!</div><p><b>Closures capture configuration.</b> The wrapper refers to values in the enclosing scope. Treat decorator configuration as immutable after decoration, validate it when constructing the decorator, and avoid capturing mutable global settings that may change unexpectedly. The configuration expression is evaluated at decoration time, not automatically re-read on every invocation.</p></div>
+  </section>
+
+  <section id="stacking">
+    <div class="section-kicker">05 / Composition</div><h2 class="section-title">Stacking decorators & ordering</h2>
+    <p class="lead">Decorator order is function composition. It can change return values, side-effect order, exception boundaries, authentication behavior, caching, timing and transaction scope.</p>
+    <div class="code-card"><div class="code-head"><div class="left">Python · output of stacked decorators</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">def bold(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return f"&lt;b&gt;{func(*args, **kwargs)}&lt;/b&gt;"
+    return wrapper
+
+def italic(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return f"&lt;i&gt;{func(*args, **kwargs)}&lt;/i&gt;"
+    return wrapper
+
+@bold
+@italic
+def greet():
+    return "Hello"
+
+print(greet())  # &lt;b&gt;&lt;i&gt;Hello&lt;/i&gt;&lt;/b&gt;</code></pre></div>
+    <p>The definition is equivalent to <span class="inline-code">greet = bold(italic(greet))</span>. At call time, the outer <span class="inline-code">bold</span> wrapper runs first and calls the inner <span class="inline-code">italic</span> wrapper.</p>
+    <h3 class="subhead">Order is architectural, not cosmetic</h3>
+    <div class="table-wrap"><table><thead><tr><th>Combination</th><th>Typical consequence</th><th>Decision point</th></tr></thead><tbody><tr><td><span class="inline-code">@cache</span> outside <span class="inline-code">@timed</span></td><td>Cache hits may bypass the timed inner wrapper.</td><td>Do you want timing of every request or only cache misses?</td></tr><tr><td><span class="inline-code">@timed</span> outside <span class="inline-code">@cache</span></td><td>Timing includes cache lookup and cached return path.</td><td>Measure observed call latency.</td></tr><tr><td><span class="inline-code">@auth</span> outside <span class="inline-code">@cache</span></td><td>Authorization runs before cached data can be returned.</td><td>Usually safer when output depends on permissions.</td></tr><tr><td><span class="inline-code">@cache</span> outside <span class="inline-code">@auth</span></td><td>A cache hit may skip the inner authorization check.</td><td>Potential security defect unless cache key and policy enforce isolation.</td></tr><tr><td><span class="inline-code">@retry</span> outside <span class="inline-code">@transaction</span></td><td>Each retry can establish a fresh transaction if the transaction wrapper encloses one call.</td><td>Ensure failed attempts roll back and retries are safe.</td></tr><tr><td><span class="inline-code">@transaction</span> outside <span class="inline-code">@retry</span></td><td>Retries may happen inside one transaction scope.</td><td>Often wrong when the transaction is already aborted or unusable.</td></tr></tbody></table></div>
+    <div class="callout good"><div class="ico">✓</div><p><b>Interview rule.</b> State the exact rewrite first, then reason from the outermost wrapper inward. Never guess order from the decorator names alone; inspect what each wrapper returns and which layer owns the side effect.</p></div>
+  </section>
+
+  <section id="methods">
+    <div class="section-kicker">06 / Object model</div><h2 class="section-title">Decorating methods & understanding descriptors</h2>
+    <p class="lead">A function stored in a class namespace is a descriptor. When accessed through an instance, its <span class="inline-code">__get__</span> behavior creates a bound method that supplies the instance as the first argument. This explains why function-based decorators usually work on instance methods, while callable decorator instances may need descriptor behavior of their own.</p>
+    <h3 class="subhead">Function decorator on an instance method</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · self passes through args</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">from functools import wraps
+
+def log_call(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        print(f"Calling {func.__qualname__}")
+        return func(*args, **kwargs)
+    return wrapper
+
+class Greeter:
+    @log_call
+    def greet(self, name):
+        return f"Hi, {name}"
+
+print(Greeter().greet("Mira"))</code></pre></div>
+    <p>When <span class="inline-code">Greeter().greet("Mira")</span> is evaluated, Python binds the wrapper function to the instance. The instance becomes the first element of <span class="inline-code">args</span>, so the wrapper does not need to know whether it is wrapping a standalone function or a method.</p>
+    <h3 class="subhead">Descriptor protocol essentials</h3>
+    <div class="table-wrap"><table><thead><tr><th>Method</th><th>Role</th><th>Descriptor category</th></tr></thead><tbody><tr><td><span class="inline-code">__get__(self, obj, owner)</span></td><td>Computes/returns an attribute value when accessed.</td><td>Non-data descriptor if this is the only protocol method.</td></tr><tr><td><span class="inline-code">__set__(self, obj, value)</span></td><td>Controls attribute assignment.</td><td>Data descriptor.</td></tr><tr><td><span class="inline-code">__delete__(self, obj)</span></td><td>Controls attribute deletion.</td><td>Data descriptor.</td></tr></tbody></table></div>
+    <p>In normal instance lookup, data descriptors have priority over the instance dictionary; instance attributes are checked before non-data descriptors. Functions are non-data descriptors, which is the mechanism behind automatic method binding. <span class="inline-code">property</span>, <span class="inline-code">staticmethod</span> and <span class="inline-code">classmethod</span> are descriptor-based tools.</p>
+    <h3 class="subhead">Decorator ordering with method descriptors</h3>
+    <p>For a conventional wrapper that expects a normal function, place it closest to the function so it decorates the raw function before <span class="inline-code">classmethod</span> or <span class="inline-code">staticmethod</span> converts it to a descriptor.</p>
+    <div class="code-card"><div class="code-head"><div class="left">Python · conventional ordering</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">class Factory:
+    @classmethod
+    @log_call
+    def from_config(cls, config):
+        return cls()
+
+    @staticmethod
+    @log_call
+    def normalize(value):
+        return value.strip().lower()
+
+    @property
+    @log_call
+    def status(self):
+        return "ready"</code></pre></div>
+    <div class="callout info"><div class="ico">i</div><p><b>Do not overgeneralize decorator order.</b> The safe ordering depends on the specific decorators. The standard <span class="inline-code">abc.abstractmethod</span> documentation explicitly says it should be the innermost decorator when combined with descriptors. Some standard decorators deliberately support nesting in particular orders; for example, <span class="inline-code">singledispatchmethod</span> must be outermost to expose its <span class="inline-code">register</span> API.</p></div>
+    <h3 class="subhead">Why a callable class decorator may fail on methods</h3>
+    <p>A normal function has descriptor binding. An instance of a class implementing only <span class="inline-code">__call__</span> does not automatically gain the same method-binding behavior. Applying that instance as a method decorator can therefore result in a missing <span class="inline-code">self</span> argument.</p>
+    <div class="code-card"><div class="code-head"><div class="left">Python · descriptor-aware callable decorator</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">from functools import update_wrapper
+from types import MethodType
+
+class CountCalls:
+    def __init__(self, func):
+        update_wrapper(self, func)
+        self.func = func
+        self.num_calls = 0
+
+    def __call__(self, *args, **kwargs):
+        self.num_calls += 1
+        return self.func(*args, **kwargs)
+
+    def __get__(self, instance, owner=None):
+        if instance is None:
+            return self
+        return MethodType(self, instance)
+
+class Worker:
+    @CountCalls
+    def process(self, item):
+        return item.upper()
+
+worker = Worker()
+worker.process("batch")  # self is correctly bound</code></pre></div>
+    <p>For method decorators, the simpler and usually preferable design is a function decorator whose wrapper is itself a function. Reach for a descriptor-aware class-based decorator only when persistent decorator state justifies the added complexity.</p>
+  </section>
+
+  <section id="async">
+    <div class="section-kicker">07 / Asynchronous callables</div><h2 class="section-title">Async functions, generators & context managers</h2>
+    <p class="lead">A wrapper must match the execution semantics of the callable it decorates. A normal call to an <span class="inline-code">async def</span> function creates a coroutine object; its body runs when awaited. A normal wrapper that times only the call therefore measures coroutine creation, not the awaited work.</p>
+    <h3 class="subhead">Correct async wrapper</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · await the coroutine</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">import asyncio
+from functools import wraps
+from time import perf_counter
+import logging
+
+logger = logging.getLogger(__name__)
+
+def async_timed(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        started = perf_counter()
+        try:
+            return await func(*args, **kwargs)
+        finally:
+            logger.info("%s took %.4fs", func.__qualname__,
+                        perf_counter() - started)
+    return wrapper
+
+@async_timed
+async def fetch_page():
+    await asyncio.sleep(0.2)
+    return {"status": "ok"}
+
+async def main():
+    result = await fetch_page()
+    print(result)
+
+asyncio.run(main())</code></pre></div>
+    <p>The wrapper is also declared with <span class="inline-code">async def</span>, and awaits the original coroutine. This keeps <span class="inline-code">inspect.iscoroutinefunction</span> useful for this decorated callable and measures the awaited operation's elapsed wall-clock time.</p>
+    <h3 class="subhead">One decorator can branch by callable kind</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · sync and coroutine functions</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">import inspect
+from functools import wraps
+from time import perf_counter
+import logging
+
+logger = logging.getLogger(__name__)
+
+def timed(func):
+    if inspect.iscoroutinefunction(func):
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            started = perf_counter()
+            try:
+                return await func(*args, **kwargs)
+            finally:
+                logger.info("%s took %.4fs", func.__qualname__,
+                            perf_counter() - started)
+        return async_wrapper
+
+    @wraps(func)
+    def sync_wrapper(*args, **kwargs):
+        started = perf_counter()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            logger.info("%s took %.4fs", func.__qualname__,
+                        perf_counter() - started)
+    return sync_wrapper</code></pre></div>
+    <p>This handles ordinary Python functions and coroutine functions. It does not automatically handle every custom callable that returns an awaitable, asynchronous generators or synchronous generators. Use the appropriate wrapper shape for each callable kind, or explicitly constrain what the decorator accepts.</p>
+    <h3 class="subhead">Generators and asynchronous generators</h3>
+    <div class="table-wrap"><table><thead><tr><th>Target callable</th><th>Call returns</th><th>Execution timing</th><th>Wrapper strategy</th></tr></thead><tbody><tr><td>Normal <span class="inline-code">def</span></td><td>Value / result</td><td>During call</td><td>Normal <span class="inline-code">def wrapper</span></td></tr><tr><td><span class="inline-code">async def</span></td><td>Coroutine object</td><td>When awaited/scheduled</td><td><span class="inline-code">async def wrapper</span> and <span class="inline-code">await</span></td></tr><tr><td>Generator function with <span class="inline-code">yield</span></td><td>Generator object</td><td>During iteration</td><td>Generator wrapper, usually <span class="inline-code">yield from</span></td></tr><tr><td>Async generator with <span class="inline-code">yield</span></td><td>Async generator object</td><td>During <span class="inline-code">async for</span></td><td>Async-generator wrapper and <span class="inline-code">async for</span></td></tr></tbody></table></div>
+    <div class="code-card"><div class="code-head"><div class="left">Python · measure generator iteration, not creation</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">from functools import wraps
+from time import perf_counter
+import logging
+
+logger = logging.getLogger(__name__)
+
+def timed_generator(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        started = perf_counter()
+        try:
+            yield from func(*args, **kwargs)
+        finally:
+            logger.info("%s iteration took %.4fs", func.__qualname__,
+                        perf_counter() - started)
+    return wrapper</code></pre></div>
+    <p><span class="inline-code">yield from</span> delegates iteration and forwards generator protocol operations to the subgenerator. A plain wrapper that simply returns the generator object only measures generator creation. Async-generator wrappers need <span class="inline-code">async def</span> with <span class="inline-code">async for</span>/<span class="inline-code">yield</span>; note that a simple async-for relay does not forward every <span class="inline-code">asend()</span>/<span class="inline-code">athrow()</span> interaction in the same way as direct delegation.</p>
+    <h3 class="subhead">Decorator-like context management</h3>
+    <p><span class="inline-code">contextlib.contextmanager</span> turns a generator function with one <span class="inline-code">yield</span> into a context-manager factory. <span class="inline-code">asynccontextmanager</span> provides the corresponding asynchronous form. Context managers can also be used as decorators via <span class="inline-code">ContextDecorator</span> and <span class="inline-code">AsyncContextDecorator</span>.</p>
+    <div class="callout warn"><div class="ico">!</div><p><b>Python 3.15 behavior change.</b> In Python 3.15, contextlib's <span class="inline-code">ContextDecorator</span> keeps the context open for the lifetime of a decorated generator/coroutine/async-generator operation rather than closing it immediately after the generator or coroutine object is created. Earlier Python versions behaved differently. Do not assume 3.15 semantics when deploying on older runtimes.</p></div>
+  </section>
+
+  <section id="classes">
+    <div class="section-kicker">08 / Class-level transformations</div><h2 class="section-title">Class decorators & class-based decorators</h2>
+    <p class="lead">These terms sound similar but refer to different designs. A class decorator is applied to a class definition. A class-based decorator uses an instance of a class as the decorator for a function.</p>
+    <div class="table-wrap"><table><thead><tr><th>Pattern</th><th>Decorates</th><th>Typical result</th><th>Example</th></tr></thead><tbody><tr><td>Class decorator</td><td>A class object</td><td>Modified/replaced class</td><td><span class="inline-code">@dataclass</span>, custom registration</td></tr><tr><td>Class-based function decorator</td><td>A function/callable</td><td>Callable instance storing state</td><td>Call counter, memoizer object</td></tr></tbody></table></div>
+    <h3 class="subhead">Class decorator example</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · attach behavior to a class</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">def add_greeting(cls):
+    cls.greeting = "Hello from a class decorator"
+    return cls
+
+@add_greeting
+class Widget:
+    pass
+
+print(Widget.greeting)</code></pre></div>
+    <p><span class="inline-code">@dataclass</span> is a standard-library class decorator. It examines annotations and adds generated methods such as <span class="inline-code">__init__</span>, <span class="inline-code">__repr__</span> and <span class="inline-code">__eq__</span> according to its options. It is not a function wrapper around each method.</p>
+    <h3 class="subhead">Class-based decorator with state</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · per-decorated-function state</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">from functools import update_wrapper
+
+class CountCalls:
+    def __init__(self, func):
+        update_wrapper(self, func)
+        self.func = func
+        self.num_calls = 0
+
+    def __call__(self, *args, **kwargs):
+        self.num_calls += 1
+        print(f"Call {self.num_calls} of {self.func.__name__}")
+        return self.func(*args, **kwargs)
+
+@CountCalls
+def say_hello():
+    print("Hello")
+
+say_hello()
+say_hello()
+print(say_hello.num_calls)  # 2</code></pre></div>
+    <p><span class="inline-code">__init__</span> runs when the class is instantiated during decoration; <span class="inline-code">__call__</span> runs on each invocation. Each decorated function receives a distinct decorator instance. If a callable class is used on methods, it needs descriptor support as discussed in the previous section.</p>
+    <div class="callout warn"><div class="ico">!</div><p><b>Concurrency note.</b> Shared mutable state such as a call counter may be updated concurrently by multiple threads. If the count must be exact, protect the increment with a lock. Do not hold that lock while executing the wrapped function unless serializing the target itself is an explicit requirement.</p></div>
+  </section>
+
+  <section id="typing">
+    <div class="section-kicker">09 / Tooling & contracts</div><h2 class="section-title">Typing, introspection & callable contracts</h2>
+    <p class="lead">A wrapper that uses <span class="inline-code">*args, **kwargs</span> is flexible at runtime, but a static type checker may not be able to preserve the original callable signature unless the decorator is typed appropriately.</p>
+    <h3 class="subhead">Use ParamSpec and TypeVar</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python 3.10+ · signature-preserving type shape</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">from collections.abc import Callable
+from functools import wraps
+from typing import ParamSpec, TypeVar
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
+def traced(func: Callable[P, R]) -> Callable[P, R]:
+    @wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        print(f"Calling {func.__qualname__}")
+        return func(*args, **kwargs)
+    return wrapper
+
+@traced
+def calculate(a: int, b: int, *, strict: bool = False) -> int:
+    return a + b</code></pre></div>
+    <p><span class="inline-code">ParamSpec</span> represents a callable's parameter specification and <span class="inline-code">TypeVar</span> represents its return type. For Python 3.9 and earlier, this typing pattern requires compatibility support such as <span class="inline-code">typing_extensions</span>, or the decorator can be left less precisely annotated.</p>
+    <h3 class="subhead">When a decorator adds or removes a parameter</h3>
+    <p>Use <span class="inline-code">Concatenate</span> with <span class="inline-code">ParamSpec</span> when the transformation changes the signature in a statically describable way, such as injecting a lock or request context. Do not claim the signature is unchanged if the decorator changes the call contract.</p>
+    <h3 class="subhead">Runtime inspection APIs</h3>
+    <div class="table-wrap"><table><thead><tr><th>API / attribute</th><th>Use</th><th>Important detail</th></tr></thead><tbody><tr><td><span class="inline-code">inspect.signature(obj)</span></td><td>Get a <span class="inline-code">Signature</span>.</td><td>Follows <span class="inline-code">__wrapped__</span> by default; supports <span class="inline-code">follow_wrapped=False</span>.</td></tr><tr><td><span class="inline-code">inspect.unwrap(obj)</span></td><td>Follow the <span class="inline-code">__wrapped__</span> chain.</td><td>Raises <span class="inline-code">ValueError</span> if a cycle is encountered.</td></tr><tr><td><span class="inline-code">inspect.iscoroutinefunction(obj)</span></td><td>Identify coroutine functions.</td><td>Recognition has evolved across Python versions; custom awaitable callables need care.</td></tr><tr><td><span class="inline-code">inspect.isgeneratorfunction(obj)</span></td><td>Identify generator functions.</td><td>Do not confuse with checking whether a returned value is a generator object.</td></tr><tr><td><span class="inline-code">inspect.isasyncgenfunction(obj)</span></td><td>Identify asynchronous generator functions.</td><td>Use the correct async-generator wrapper protocol.</td></tr><tr><td><span class="inline-code">inspect.signature(...).bind(...)</span></td><td>Validate arguments against a signature.</td><td>Raises <span class="inline-code">TypeError</span> for invalid binding; useful for adapters.</td></tr></tbody></table></div>
+    <div class="callout info"><div class="ico">i</div><p><b>Python 3.12+ introspection detail.</b> <span class="inline-code">inspect.markcoroutinefunction()</span> can mark a synchronous callable as a coroutine function for introspection when it returns a coroutine. The documentation prefers <span class="inline-code">async def</span> when possible. This marker does not turn synchronous code into an async function or make its body awaitable by itself.</p></div>
+  </section>
+
+  <section id="stdlib">
+    <div class="section-kicker">10 / Standard library</div><h2 class="section-title">Standard-library decorators and decorator tools</h2>
+    <p class="lead">Knowing the standard-library examples helps distinguish simple wrappers from descriptors, class transformations and registration utilities. These are the patterns interviewers often expect you to recognize.</p>
+    <div class="table-wrap"><table><thead><tr><th>Decorator / tool</th><th>Target / behavior</th><th>Key operational points</th></tr></thead><tbody>
+      <tr><td><span class="inline-code">functools.wraps</span></td><td>Wrapper function; copies metadata and sets <span class="inline-code">__wrapped__</span>.</td><td>Use on most hand-written function wrappers.</td></tr>
+      <tr><td><span class="inline-code">functools.lru_cache</span></td><td>Memoizes results for recent argument combinations.</td><td>Default <span class="inline-code">maxsize=128</span>; arguments must be hashable; cache is thread-safe but duplicate concurrent computation can occur.</td></tr>
+      <tr><td><span class="inline-code">functools.cache</span></td><td>Unbounded memoization; equivalent to <span class="inline-code">lru_cache(maxsize=None)</span>.</td><td>Added in Python 3.9; memory can grow without bound.</td></tr>
+      <tr><td><span class="inline-code">functools.cached_property</span></td><td>Computes a property once then stores it as an instance attribute.</td><td>Requires mutable instance <span class="inline-code">__dict__</span>; allows later writes; concurrent getter calls can duplicate work on 3.12+.</td></tr>
+      <tr><td><span class="inline-code">property</span></td><td>Descriptor for managed attribute access.</td><td>Supports getter, setter and deleter; not just a normal wrapper.</td></tr>
+      <tr><td><span class="inline-code">classmethod</span></td><td>Descriptor binds the class as first argument.</td><td>Common for alternate constructors.</td></tr>
+      <tr><td><span class="inline-code">staticmethod</span></td><td>Descriptor that does not inject instance/class.</td><td>Useful for namespace organization; no automatic binding.</td></tr>
+      <tr><td><span class="inline-code">abc.abstractmethod</span></td><td>Marks an abstract method/property.</td><td>Use with an ABC; innermost when combined with descriptors.</td></tr>
+      <tr><td><span class="inline-code">dataclasses.dataclass</span></td><td>Class decorator that generates data-model methods.</td><td>Class transformation, not a function wrapper.</td></tr>
+      <tr><td><span class="inline-code">functools.singledispatch</span></td><td>Generic function dispatch based on first argument type.</td><td>Uses <span class="inline-code">register()</span>; falls back through method resolution order.</td></tr>
+      <tr><td><span class="inline-code">functools.singledispatchmethod</span></td><td>Method form; dispatches on first non-self/non-cls argument.</td><td>Must be outermost when its <span class="inline-code">register</span> API is needed.</td></tr>
+      <tr><td><span class="inline-code">contextlib.contextmanager</span></td><td>Turns a generator function into a context-manager factory.</td><td>Place cleanup in <span class="inline-code">finally</span>; one yield for the with-block handoff.</td></tr>
+      <tr><td><span class="inline-code">contextlib.asynccontextmanager</span></td><td>Async context-manager factory.</td><td>Use <span class="inline-code">async with</span> and async cleanup.</td></tr>
+      <tr><td><span class="inline-code">functools.total_ordering</span></td><td>Class decorator fills in missing rich comparison methods.</td><td>Can be slower and produce more complex traces than implementing methods directly.</td></tr>
+    </tbody></table></div>
+    <h3 class="subhead">Deep dive: <span class="inline-code">lru_cache</span></h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · bounded memoization</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">from functools import lru_cache
+
+@lru_cache(maxsize=128, typed=False)
+def lookup_region(region_code: str) -> str:
+    # Illustrative deterministic, read-only computation.
+    return region_code.upper()
+
+print(lookup_region("ap-south"))
+print(lookup_region.cache_info())
+lookup_region.cache_clear()
+print(lookup_region.cache_parameters())</code></pre></div>
+    <div class="table-wrap"><table><thead><tr><th>Parameter / method</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="inline-code">maxsize</span></td><td>Maximum cached entries; <span class="inline-code">None</span> means unbounded; default is 128.</td></tr><tr><td><span class="inline-code">typed</span></td><td>When true, arguments of different types are cached separately for immediate argument types.</td></tr><tr><td><span class="inline-code">cache_info()</span></td><td>Returns hits, misses, maximum size and current size.</td></tr><tr><td><span class="inline-code">cache_clear()</span></td><td>Clears cached entries.</td></tr><tr><td><span class="inline-code">cache_parameters()</span></td><td>Returns cache configuration as a dictionary.</td></tr></tbody></table></div>
+    <p><b>Method-specific behavior:</b> decorating an instance method with <span class="inline-code">lru_cache</span> includes <span class="inline-code">self</span> in the cache key. Different instances generally get distinct entries; an entry may keep an instance reachable until it is evicted or cleared. The cache is associated with the wrapped method function, not separately allocated per instance.</p>
+    <h3 class="subhead">Deep dive: <span class="inline-code">cached_property</span> versus <span class="inline-code">property</span></h3>
+    <div class="table-wrap"><table><thead><tr><th>Characteristic</th><th><span class="inline-code">property</span></th><th><span class="inline-code">cached_property</span></th></tr></thead><tbody><tr><td>Evaluation</td><td>Getter normally executes on each access.</td><td>Computes on first missing-attribute lookup then stores result.</td></tr><tr><td>Write behavior</td><td>Read-only unless a setter is defined.</td><td>Normal attribute assignment can replace cached value.</td></tr><tr><td>Clear / recompute</td><td>Getter naturally reevaluates.</td><td>Delete the cached attribute to recompute.</td></tr><tr><td>Instance requirements</td><td>Can support slots/custom descriptor cases.</td><td>Needs mutable instance <span class="inline-code">__dict__</span>.</td></tr><tr><td>Concurrency</td><td>No implicit cache synchronization.</td><td>Since 3.12, no built-in per-property lock; getter may execute more than once concurrently.</td></tr></tbody></table></div>
+  </section>
+
+  <section id="patterns">
+    <div class="section-kicker">11 / Production patterns</div><h2 class="section-title">Production-ready decorator patterns</h2>
+    <p class="lead">The best decorators implement a narrow, explicit policy and preserve the target's contract. The examples below are reusable starting points, not substitutes for an application's transaction, security or observability design.</p>
+    <h3 class="subhead">Bounded retry with exponential backoff and jitter</h3>
+    <p>Retries are useful for transient failures such as a connection reset or temporary service unavailability. They are dangerous when they repeat non-idempotent side effects. A production retry policy needs bounded attempts, exception filtering, delay strategy, observability and a clear idempotency contract.</p>
+    <div class="code-card"><div class="code-head"><div class="left">Python · synchronous retry factory</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">import random
+import time
+from functools import wraps
+import logging
+
+logger = logging.getLogger(__name__)
+
+def retry(max_attempts=3, exceptions=(TimeoutError, ConnectionError),
+          base_delay=0.5, max_delay=8.0, jitter=True):
+    if max_attempts < 1:
+        raise ValueError("max_attempts must be >= 1")
+    if base_delay < 0 or max_delay < 0:
+        raise ValueError("delays must be non-negative")
+
+    def decorate(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    return func(*args, **kwargs)
+                except exceptions:
+                    if attempt == max_attempts:
+                        logger.exception("%s failed after %d attempts",
+                                         func.__qualname__, attempt)
+                        raise
+                    delay_cap = min(max_delay,
+                                    base_delay * (2 ** (attempt - 1)))
+                    delay = random.uniform(0, delay_cap) if jitter else delay_cap
+                    logger.warning("Retrying %s after attempt %d in %.2fs",
+                                   func.__qualname__, attempt, delay)
+                    time.sleep(delay)
+        return wrapper
+    return decorate</code></pre></div>
+    <p>Use it only on an operation whose retry semantics are understood:</p>
+    <div class="code-card"><div class="code-head"><div class="left">Python · use with an idempotent operation</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">@retry(max_attempts=4, exceptions=(TimeoutError,))
+def read_manifest(uri):
+    return object_store.get(uri)
+
+# For a write, use an idempotency key or a conditional/transactional write.
+@retry(max_attempts=3, exceptions=(TimeoutError,))
+def publish_partition(partition_id, idempotency_key):
+    return sink.write_partition(partition_id,
+                                idempotency_key=idempotency_key)</code></pre></div>
+    <div class="callout warn"><div class="ico">!</div><p><b>Retry safety checklist.</b> Does the call have externally visible side effects? Can the same request be safely repeated? Is a timeout ambiguous (the server may have completed the operation)? Is there an idempotency key, unique constraint, conditional write or transactional boundary? Are retryable exceptions narrow? Are the total attempts and worst-case delay bounded?</p></div>
+    <h3 class="subhead">Async retry</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · asynchronous retry pattern</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">import asyncio
+import random
+from functools import wraps
+
+def async_retry(max_attempts=3, exceptions=(TimeoutError,)):
+    if max_attempts < 1:
+        raise ValueError("max_attempts must be >= 1")
+
+    def decorate(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    return await func(*args, **kwargs)
+                except exceptions:
+                    if attempt == max_attempts:
+                        raise
+                    delay = min(8.0, 0.5 * (2 ** (attempt - 1)))
+                    await asyncio.sleep(random.uniform(0, delay))
+        return wrapper
+    return decorate</code></pre></div>
+    <p>Do not catch <span class="inline-code">BaseException</span> broadly. In modern asyncio, cancellation is part of control flow and should normally propagate. The default <span class="inline-code">Exception</span>-derived transient failures do not swallow cancellation.</p>
+    <h3 class="subhead">Validation decorator</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · validate at the function boundary</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">from functools import wraps
+
+def require_non_empty_argument(argument_name):
+    def decorate(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if argument_name in kwargs:
+                value = kwargs[argument_name]
+            else:
+                raise TypeError(
+                    f"{argument_name!r} must be passed by keyword"
+                )
+            if value is None or value == "":
+                raise ValueError(f"{argument_name} cannot be empty")
+            return func(*args, **kwargs)
+        return wrapper
+    return decorate
+
+@require_non_empty_argument("dataset")
+def build_path(*, dataset):
+    return f"/warehouse/{dataset}"</code></pre></div>
+    <p>This deliberately narrow example requires a keyword argument. A general validator should use <span class="inline-code">inspect.signature(func).bind(*args, **kwargs)</span> or <span class="inline-code">bind_partial</span> to map positional and keyword arguments safely. Avoid hand-parsing arbitrary signatures unless necessary.</p>
+    <h3 class="subhead">Authorization and registration patterns</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · policy wrapper (illustrative)</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">from functools import wraps
+
+def requires_permission(permission, authorizer):
+    def decorate(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # The authorizer is injected; no global identity is assumed.
+            if not authorizer.has_permission(permission):
+                raise PermissionError(f"Missing permission: {permission}")
+            return func(*args, **kwargs)
+        return wrapper
+    return decorate
+
+# Example wiring: permission service is supplied by the application.
+@requires_permission("dataset:read", authorizer)
+def read_sensitive_dataset(dataset_id):
+    ...</code></pre></div>
+    <p>Authentication/authorization decorators should make identity and policy sources explicit, execute authorization before any cached or sensitive result is exposed, and avoid treating a decorated Python function as a security boundary against arbitrary in-process code.</p>
+  </section>
+
+  <section id="dataengineering">
+    <div class="section-kicker">12 / Data engineering use</div><h2 class="section-title">Applying decorators in data engineering</h2>
+    <p class="lead">In a data platform, decorators are useful for cross-cutting function-level policies around extract, transform, validation and publish operations. They should improve consistency without hiding the pipeline's data semantics.</p>
+    <h3 class="subhead">Common applications</h3>
+    <div class="card-grid"><div class="info-card"><span class="tag red">OBSERVABILITY</span><h4>Execution timing & metrics</h4><p>Measure function duration, outcome and bounded labels for ingestion or transformation tasks. Do not log raw records or secrets.</p></div><div class="info-card"><span class="tag red">RESILIENCE</span><h4>Transient retry</h4><p>Retry idempotent reads or writes with explicit idempotency controls, capped backoff and selected exception classes.</p></div><div class="info-card"><span class="tag red">GOVERNANCE</span><h4>Permission checks</h4><p>Require a permission or data classification check before running a sensitive operation.</p></div><div class="info-card"><span class="tag red">QUALITY</span><h4>Input / output validation</h4><p>Check required parameters or result invariants at stable function boundaries, and report failures consistently.</p></div><div class="info-card"><span class="tag red">EFFICIENCY</span><h4>Memoization</h4><p>Cache deterministic, bounded metadata lookups. Avoid caching large mutable datasets or freshness-sensitive values by default.</p></div><div class="info-card"><span class="tag red">REGISTRY</span><h4>Task registration</h4><p>Register handlers, validators or plugin functions at import/definition time, then execute them through a controlled registry.</p></div></div>
+    <h3 class="subhead">Example: composable pipeline instrumentation</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · separate concerns from transformation logic</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">from functools import wraps
+from time import perf_counter
+import logging
+
+logger = logging.getLogger("pipeline")
+
+def observe_step(step_name):
+    def decorate(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            started = perf_counter()
+            outcome = "success"
+            try:
+                return func(*args, **kwargs)
+            except Exception:
+                outcome = "failure"
+                raise
+            finally:
+                logger.info("pipeline_step=%s function=%s outcome=%s duration_s=%.3f",
+                            step_name, func.__qualname__, outcome,
+                            perf_counter() - started)
+        return wrapper
+    return decorate
+
+def require_batch_id(func):
+    @wraps(func)
+    def wrapper(batch_id, *args, **kwargs):
+        if not batch_id:
+            raise ValueError("batch_id is required")
+        return func(batch_id, *args, **kwargs)
+    return wrapper
+
+@observe_step("normalize")
+@require_batch_id
+def normalize_batch(batch_id, records):
+    return [record for record in records if record.get("id") is not None]</code></pre></div>
+    <p>Note that the decorator signature should reflect the target contract. In the example, <span class="inline-code">require_batch_id</span> assumes the first argument is the batch identifier. It is intentionally not a universal method/function decorator; a production implementation should either formalize that signature or use <span class="inline-code">inspect.Signature.bind</span>.</p>
+    <h3 class="subhead">Illustrative execution architecture</h3>
+    <div class="diagram"><div class="diagram-title">Decorator layers around a logical data step</div><div class="flow"><div class="node"><strong>Caller</strong>Pipeline runner</div><div class="arrow">→</div><div class="node hot"><strong>Observe</strong>Metrics / duration</div><div class="arrow">→</div><div class="node"><strong>Authorize</strong>Policy check</div><div class="arrow">→</div><div class="node"><strong>Retry</strong>Transient failure policy</div><div class="arrow">→</div><div class="node dark"><strong>Core function</strong>Read / transform / publish</div></div><div class="diagram-note">Conceptual only. The correct layer order depends on what should be measured, retried, cached or protected.</div></div>
+    <h3 class="subhead">Decision table: should this be a decorator?</h3>
+    <div class="table-wrap"><table><thead><tr><th>Need</th><th>Decorator fit</th><th>Alternative / caution</th></tr></thead><tbody><tr><td>Same timing/logging around many stable functions</td><td class="yes">Good fit</td><td>Use common middleware/interceptor if the framework already provides it.</td></tr><tr><td>Retry a known idempotent remote call</td><td class="yes">Good fit with explicit policy</td><td>Use client-library retry when it has richer protocol-aware behavior.</td></tr><tr><td>Complex multi-step transaction spanning several calls</td><td class="no">Usually poor fit</td><td>Use an explicit transaction/unit-of-work context or orchestration state machine.</td></tr><tr><td>Transform a DataFrame through multiple stages</td><td>Depends</td><td>Keep transformation/data lineage explicit; decorator should not hide lazy execution behavior.</td></tr><tr><td>Cache rapidly changing or user-specific data</td><td class="no">High risk</td><td>Use explicit cache keys, TTL and invalidation policy.</td></tr><tr><td>Enforce infrastructure-wide security boundary</td><td class="no">Insufficient alone</td><td>Enforce at service, storage, identity and platform boundaries too.</td></tr></tbody></table></div>
+  </section>
+
+  <section id="quality">
+    <div class="section-kicker">13 / Delivery & operations</div><h2 class="section-title">Testing, CI/CD & operational behavior</h2>
+    <p class="lead">Decorators change the callable object seen by application code. Test both the wrapper policy and the observable callable contract. Most decorator defects are not syntax errors; they are semantic regressions in return values, exceptions, metadata, timing or ordering.</p>
+    <h3 class="subhead">What to test</h3>
+    <ul class="checklist"><li>Arguments are forwarded exactly once per intended attempt, including positional-only and keyword-only parameters.</li><li>Return values are preserved, or any intentional transformation is explicitly documented.</li><li>Exceptions propagate unchanged unless the decorator contract says otherwise.</li><li>Metadata and introspection are preserved with <span class="inline-code">wraps</span> or <span class="inline-code">update_wrapper</span>.</li><li>Decorator application occurs at the expected definition time and does not trigger external I/O.</li><li>Stack order is tested where caching, auth, transaction, retry or logging are combined.</li><li>Async tests await the decorated function; generator tests fully iterate or close the iterator.</li><li>Retry tests use deterministic delays/randomness or injected sleep functions rather than slow real waits.</li><li>Concurrency tests cover shared decorator state where exactness or isolation matters.</li></ul>
+    <h3 class="subhead">Example: test a retry decorator without sleeping</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · pytest-style test sketch</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">def test_retry_eventually_succeeds(monkeypatch):
+    calls = {"count": 0}
+    delays = []
+
+    monkeypatch.setattr("time.sleep", delays.append)
+
+    @retry(max_attempts=3, exceptions=(TimeoutError,),
+           base_delay=0, max_delay=0, jitter=False)
+    def operation():
+        calls["count"] += 1
+        if calls["count"] < 3:
+            raise TimeoutError("temporary")
+        return "ok"
+
+    assert operation() == "ok"
+    assert calls["count"] == 3
+    assert delays == [0, 0]</code></pre></div>
+    <p>This sketch assumes the retry decorator above and a module import path where the sleep function is patched correctly. In a mature library, inject the sleep and random functions as dependencies or patch the symbol where it is looked up. Keep the test focused on policy rather than elapsed wall-clock time.</p>
+    <h3 class="subhead">CI/CD checks for decorators</h3>
+    <div class="table-wrap"><table><thead><tr><th>Stage</th><th>Checks</th><th>Reason</th></tr></thead><tbody><tr><td>Static analysis</td><td>Type checking, linting, import checks.</td><td>Find signature drift, broad exception handling and unreachable paths.</td></tr><tr><td>Unit tests</td><td>Forwarding, metadata, result, exception, call counts.</td><td>Verify the decorator contract.</td></tr><tr><td>Integration tests</td><td>Real client exceptions, transaction semantics, async cancellation.</td><td>Validate environment-specific behavior.</td></tr><tr><td>Performance tests</td><td>Wrapper overhead, cache hit/miss patterns, high-concurrency tests.</td><td>Ensure abstraction cost is acceptable.</td></tr><tr><td>Release tests</td><td>Supported Python versions and runtime matrix.</td><td>Catch stdlib behavior changes and typing compatibility issues.</td></tr></tbody></table></div>
+    <h3 class="subhead">Deployment and compatibility guidance</h3>
+    <p>Decorators are ordinary Python code and ship with the application/package. There is no special deployment mechanism. For reusable libraries, document supported Python versions, decorator configuration defaults, whether the decorator supports methods/async/generators, its exception policy, and whether it changes the return type. Test against every Python version the package declares as supported.</p>
+  </section>
+
+  <section id="performance">
+    <div class="section-kicker">14 / Efficiency</div><h2 class="section-title">Performance, cost & design trade-offs</h2>
+    <p class="lead">A wrapper adds at least one additional call layer and often incurs closure lookup, argument packing/unpacking, logging, metrics, locking or cache-key construction. Whether that overhead matters depends on call frequency and the cost of the wrapped operation.</p>
+    <h3 class="subhead">Performance considerations</h3>
+    <div class="table-wrap"><table><thead><tr><th>Concern</th><th>Effect</th><th>Mitigation</th></tr></thead><tbody><tr><td>Call overhead</td><td>Extra Python function call(s), argument tuple/dict handling.</td><td>Benchmark hot paths; avoid unnecessary stacked wrappers.</td></tr><tr><td>Logging overhead</td><td>Formatting and I/O can dominate very small functions.</td><td>Use level checks/structured logging; avoid high-cardinality event spam.</td></tr><tr><td>Metrics cardinality</td><td>Dynamic labels can grow metric series and backend cost.</td><td>Use bounded labels; do not label by row ID, user ID or arbitrary input.</td></tr><tr><td>Cache memory</td><td>Cached keys and values retain references.</td><td>Bound <span class="inline-code">maxsize</span>, monitor cache_info, clear caches when appropriate.</td></tr><tr><td>Lock contention</td><td>Shared state or synchronization can serialize calls.</td><td>Use minimal critical sections or per-instance state.</td></tr><tr><td>Repeated retries</td><td>Increases compute, network and downstream load during incidents.</td><td>Bound attempts, backoff, jitter, timeout budget and concurrency.</td></tr></tbody></table></div>
+    <h3 class="subhead">Caching decision matrix</h3>
+    <div class="table-wrap"><table><thead><tr><th>Workload</th><th>Cache choice</th><th>Reason / risk</th></tr></thead><tbody><tr><td>Pure deterministic function, small hashable arguments</td><td><span class="inline-code">lru_cache</span> or <span class="inline-code">cache</span></td><td>Safe reuse if data/logic version is stable.</td></tr><tr><td>Bounded memory required</td><td><span class="inline-code">lru_cache(maxsize=N)</span></td><td>Evicts least-recently-used entries.</td></tr><tr><td>Effectively immutable instance property</td><td><span class="inline-code">cached_property</span></td><td>Cache stored on the instance; instance must support mutable <span class="inline-code">__dict__</span>.</td></tr><tr><td>Mutable list/dict arguments</td><td>Not directly with <span class="inline-code">lru_cache</span></td><td>Arguments must be hashable; canonicalize only if semantics are clear.</td></tr><tr><td>Freshness-sensitive remote data</td><td>Usually explicit cache with TTL/invalidation</td><td>Decorator cache has no built-in expiry or distributed invalidation.</td></tr><tr><td>Cross-process / distributed shared data</td><td>External cache/service</td><td>In-process functools caches are local to a process and interpreter.</td></tr></tbody></table></div>
+    <div class="callout good"><div class="ico">✓</div><p><b>Optimization rule.</b> Measure before optimizing. For a database or network operation that takes tens or hundreds of milliseconds, a small wrapper cost is usually negligible. For a tiny function called millions of times per second, it may matter. A cache is not automatically faster overall: hashing, memory retention, contention and invalidation can outweigh recomputation.</p></div>
+  </section>
+
+  <section id="security">
+    <div class="section-kicker">15 / Trust boundaries</div><h2 class="section-title">Security, privacy & reliability</h2>
+    <p class="lead">Decorators often sit around privileged functions, so logging, authorization and retry policies must be designed with explicit data boundaries.</p>
+    <h3 class="subhead">Security principles</h3>
+    <ul><li><b>Authorize before returning protected data.</b> Confirm that cache layers cannot bypass authorization or mix results across identities/tenants.</li><li><b>Do not log secrets or payloads by default.</b> Avoid logging credentials, access tokens, connection strings, row contents, personally identifiable values or unrestricted function arguments.</li><li><b>Inject dependencies.</b> Pass an authorizer, logger or policy object explicitly rather than relying on hidden global state.</li><li><b>Preserve failures.</b> Do not turn permission errors, data corruption or programming mistakes into silent success values.</li><li><b>Bound resource use.</b> Limit retries, timeouts, cached entries, metric labels and retained references.</li><li><b>Do not treat decorators as a sandbox.</b> Code running in the same Python process can often call underlying functions, inspect objects or alter state. Enforce authorization at the actual service/storage boundary.</li></ul>
+    <h3 class="subhead">Reliability review for retry / cache / timing</h3>
+    <div class="table-wrap"><table><thead><tr><th>Pattern</th><th>Failure mode</th><th>Control</th></tr></thead><tbody><tr><td>Retry</td><td>Duplicate write after timeout ambiguity.</td><td>Idempotency key, unique operation ID, transactional/conditional write.</td></tr><tr><td>Cache</td><td>Stale or cross-tenant result.</td><td>Correct cache key, bounded lifetime, invalidation and identity isolation.</td></tr><tr><td>Metrics</td><td>High-cardinality labels expose identifiers or inflate costs.</td><td>Static bounded labels and aggregation.</td></tr><tr><td>Logging</td><td>Sensitive data leakage.</td><td>Structured allow-listed fields; redaction before emission.</td></tr><tr><td>Authorization</td><td>Stack order skips policy on cache hit.</td><td>Make auth outermost or ensure cache key/policy semantics are formally safe.</td></tr><tr><td>Stateful decorator</td><td>Race conditions or cross-request state leakage.</td><td>Per-call/per-instance state, locks, context-local state or stateless wrapper.</td></tr></tbody></table></div>
+  </section>
+
+  <section id="troubleshooting">
+    <div class="section-kicker">16 / Debugging</div><h2 class="section-title">Troubleshooting & common mistakes</h2>
+    <div class="table-wrap"><table><thead><tr><th>Symptom</th><th>Likely cause</th><th>Resolution</th></tr></thead><tbody>
+      <tr><td>Decorated function returns <span class="inline-code">None</span>.</td><td>Wrapper called the target but did not return its result.</td><td>Return the target result.</td></tr>
+      <tr><td>Unexpected missing/extra arguments.</td><td>Wrapper signature does not forward <span class="inline-code">*args</span>/<span class="inline-code">**kwargs</span> correctly, or descriptor binding is missing.</td><td>Check the target signature and method binding; test positional and keyword calls.</td></tr>
+      <tr><td>Function name is <span class="inline-code">wrapper</span>.</td><td>Missing <span class="inline-code">@wraps</span>.</td><td>Apply <span class="inline-code">@wraps(func)</span> to the wrapper.</td></tr>
+      <tr><td>Timer says async method took nearly zero seconds.</td><td>Measured coroutine creation only.</td><td>Use an async wrapper and await the target.</td></tr>
+      <tr><td>Generator timing is nearly zero.</td><td>Measured generator object creation, not iteration.</td><td>Use generator-aware wrapper and time the iteration lifetime.</td></tr>
+      <tr><td><span class="inline-code">TypeError</span> missing <span class="inline-code">self</span> for callable-class decorator.</td><td>Decorator instance lacks <span class="inline-code">__get__</span>.</td><td>Use a function decorator or implement descriptor binding.</td></tr>
+      <tr><td><span class="inline-code">TypeError: unhashable type</span>.</td><td>Unhashable input passed to <span class="inline-code">lru_cache</span>.</td><td>Use hashable immutable key material or another cache API.</td></tr>
+      <tr><td>Old data returned unexpectedly.</td><td>Cache has no TTL/invalidation and key omits freshness dimensions.</td><td>Clear/cache-bust, include version inputs, or use an explicit cache with TTL.</td></tr>
+      <tr><td>Decorator runs during import unexpectedly.</td><td>Decorator application is definition-time work.</td><td>Move heavyweight initialization into an explicit runtime/startup function.</td></tr>
+      <tr><td>Retries duplicate records or writes.</td><td>Operation is not idempotent.</td><td>Use idempotency keys or conditional/transactional semantics; narrow retries.</td></tr>
+      <tr><td>Authorization absent for cached result.</td><td>Cache is outside/above authorization in the call chain.</td><td>Correct the order and isolate cache keys by principal/policy.</td></tr>
+      <tr><td>Call count inaccurate under concurrency.</td><td>Mutable decorator state races.</td><td>Synchronize state or use a thread-safe metrics primitive.</td></tr>
+    </tbody></table></div>
+    <h3 class="subhead">Debug systematically</h3>
+    <div class="code-card"><div class="code-head"><div class="left">Python · inspect a decorated callable</div><button class="copy-btn">Copy</button></div><pre><code class="language-python">import inspect
+
+print(type(target))
+print(target.__name__)
+print(target.__qualname__)
+print(inspect.signature(target))
+print(inspect.signature(target, follow_wrapped=False))
+print(inspect.unwrap(target))
+print(getattr(target, "__wrapped__", None))
+print(inspect.iscoroutinefunction(target))
+print(inspect.isgeneratorfunction(target))</code></pre></div>
+    <p>Also check the exact application order, whether a wrapper returns the target result, whether it preserves raised exceptions, whether it is applied at import time, and whether the target is a method, coroutine or generator. Use a minimal reproduction with only one decorator before investigating the full stack.</p>
+  </section>
+
+  <section id="scenarios">
+    <div class="section-kicker">17 / Architecture scenarios</div><h2 class="section-title">End-to-end scenarios & design decisions</h2>
+    <p class="lead">The following scenarios demonstrate how to reason about decorators in a production data-engineering codebase. The important skill is not to apply more decorators; it is to place each policy at the right boundary and retain clear failure semantics.</p>
+    <h3 class="subhead">Scenario A — Resilient metadata ingestion</h3>
+    <p><b>Requirement:</b> Read a remote manifest, parse it and publish a batch status. Temporary network faults should retry; every attempt and overall outcome should be observable. Publishing the same batch twice must not create duplicate state.</p>
+    <div class="diagram"><div class="diagram-title">Suggested call structure</div><div class="flow"><div class="node"><strong>Pipeline runner</strong>batch_id</div><div class="arrow">→</div><div class="node hot"><strong>Observe</strong>overall duration</div><div class="arrow">→</div><div class="node"><strong>Retry</strong>read manifest</div><div class="arrow">→</div><div class="node"><strong>Transform</strong>validate manifest</div><div class="arrow">→</div><div class="node dark"><strong>Idempotent publish</strong>keyed by batch_id</div></div></div>
+    <p><b>Design:</b> Retry only the remote read if that read is idempotent and exceptions are transient. Make the publish idempotent at the storage/API layer using <span class="inline-code">batch_id</span> or an operation ID. An outer timing decorator can measure total observed duration; separate metrics can measure each stage.</p>
+    <p><b>Trade-off:</b> Retrying the entire pipeline can repeat non-idempotent work. Prefer placing retry on the smallest operation with a well-defined retry contract.</p>
+    <h3 class="subhead">Scenario B — Permission-aware cached dimension lookup</h3>
+    <p><b>Requirement:</b> A service exposes a small lookup function. Data access is tenant-specific, and permission can vary by user.</p>
+    <p><b>Design:</b> Enforce authorization before returning any cached value. Either make the cache key include all security-relevant dimensions (tenant, identity or policy version as required) or cache only a tenant-neutral public value and apply authorization separately. Do not use a global memoization key that only includes a row/business identifier if different principals see different data.</p>
+    <div class="callout warn"><div class="ico">!</div><p><b>Architect-level signal:</b> “Put <span class="inline-code">@lru_cache</span> on the read function” is incomplete. Discuss authorization order, cache-key design, freshness, memory retention, cross-process behavior and invalidation.</p></div>
+    <h3 class="subhead">Scenario C — Async API fetch fan-out</h3>
+    <p><b>Requirement:</b> Fetch multiple remote manifests concurrently. Each call has a per-attempt retry policy and async timing, but cancellation must work during shutdown.</p>
+    <p><b>Design:</b> Use an <span class="inline-code">async def</span> wrapper that awaits the client operation, an async retry that awaits backoff, and a narrow exception tuple. Do not catch <span class="inline-code">BaseException</span> or swallow cancellation. Ensure concurrency is bounded by a semaphore or client limit; a decorator is not itself a concurrency limiter unless that is explicitly implemented.</p>
+    <h3 class="subhead">Scenario D — Shared data-quality validation</h3>
+    <p><b>Requirement:</b> Many handlers need a consistent batch identifier and common output validation.</p>
+    <p><b>Design:</b> Decorators can handle function-boundary checks, but schema validation often needs explicit data contracts and rich error reporting. Keep transformation and validation visible in function names or typed interfaces when they materially change data. Avoid hiding large data scans inside decorators because that makes execution order and lineage harder to reason about.</p>
+    <h3 class="subhead">Architect decision checklist</h3>
+    <ul class="checklist"><li>Is this truly cross-cutting behavior shared by multiple callables?</li><li>Does it preserve the original signature, result, exceptions and cancellation semantics?</li><li>Does it apply at definition time or invocation time, and is that intended?</li><li>Does decorator order alter security, retries, transactions, caching or observability?</li><li>Does it support methods, class methods, static methods, async callables or generators as required?</li><li>Is all mutable state safe across threads/tasks and independent across decorated functions?</li><li>Can behavior be tested without external services, long sleeps or import side effects?</li><li>Would explicit composition or a context manager be clearer than a decorator?</li></ul>
+  </section>
+
+  <section id="interview">
+    <div class="section-kicker">18 / Interview bank</div><h2 class="section-title">Interview questions & answers</h2>
+    <p class="lead">Use the answers as a baseline, then explain the mechanism and trade-offs. Expand each question to review the response.</p>
+    <h3 class="subhead">Beginner</h3>
+    <details class="qa"><summary><span class="level">Beginner</span> What is a Python decorator?</summary><div class="answer"><p>A callable that takes an object—commonly a function or class—and returns a replacement or modified object. A common decorator creates a wrapper to add behavior around a function call without changing the function's core implementation.</p></div></details>
+    <details class="qa"><summary><span class="level">Beginner</span> Why can a function be passed to a decorator?</summary><div class="answer"><p>Functions are first-class objects in Python. They can be assigned, passed as arguments and returned from other functions. A decorator receives the function object as an ordinary argument.</p></div></details>
+    <details class="qa"><summary><span class="level">Beginner</span> What is the equivalent of <span class="inline-code">@my_decorator</span>?</summary><div class="answer"><p>For a function named <span class="inline-code">work</span>, it is equivalent to <span class="inline-code">work = my_decorator(work)</span>. The returned object is bound to the name.</p></div></details>
+    <details class="qa"><summary><span class="level">Beginner</span> Does a decorator run on every function call?</summary><div class="answer"><p>The decorator application runs when execution reaches the decorated definition. A wrapper returned by the decorator typically runs on each subsequent call. A decorator factory expression may also run at definition time.</p></div></details>
+    <details class="qa"><summary><span class="level">Beginner</span> Why use <span class="inline-code">*args</span> and <span class="inline-code">**kwargs</span>?</summary><div class="answer"><p>They let the wrapper accept and forward arbitrary positional and keyword arguments. A wrapper with a fixed signature is only suitable for target functions matching that exact call shape.</p></div></details>
+    <details class="qa"><summary><span class="level">Beginner</span> Why must the wrapper return the wrapped function's result?</summary><div class="answer"><p>Without a return statement, the wrapper returns <span class="inline-code">None</span>. That silently changes the decorated function's contract even when the original function returns a useful value.</p></div></details>
+    <h3 class="subhead">Intermediate</h3>
+    <details class="qa"><summary><span class="level">Intermediate</span> What does <span class="inline-code">functools.wraps</span> do?</summary><div class="answer"><p>It applies <span class="inline-code">update_wrapper</span> to copy selected metadata from the wrapped callable, update the wrapper's attribute dictionary and add <span class="inline-code">__wrapped__</span>. This improves docs, debugging and introspection. Since Python 3.12, <span class="inline-code">__type_params__</span> is copied by default.</p></div></details>
+    <details class="qa"><summary><span class="level">Intermediate</span> How do decorators with arguments work?</summary><div class="answer"><p>An outer factory accepts configuration and returns the actual decorator. The actual decorator receives the function and returns a wrapper. It is commonly described as a three-layer pattern: factory → decorator → wrapper.</p></div></details>
+    <details class="qa"><summary><span class="level">Intermediate</span> In what order are stacked decorators applied?</summary><div class="answer"><p>They are applied bottom-up. <span class="inline-code">@a</span> above <span class="inline-code">@b</span> is equivalent to <span class="inline-code">func = a(b(func))</span>. At call time, the outermost wrapper is entered first.</p></div></details>
+    <details class="qa"><summary><span class="level">Intermediate</span> How does a decorator work on an instance method?</summary><div class="answer"><p>A Python function stored on the class is a non-data descriptor. Access through an instance binds the instance as the first argument. A function wrapper remains a function descriptor, so <span class="inline-code">self</span> is forwarded in <span class="inline-code">args</span>.</p></div></details>
+    <details class="qa"><summary><span class="level">Intermediate</span> Why does a normal timer decorator fail for an async function?</summary><div class="answer"><p>Calling an <span class="inline-code">async def</span> function creates a coroutine object; it does not execute the coroutine body. A synchronous wrapper that times only the call measures object creation. Use an async wrapper and await the target.</p></div></details>
+    <details class="qa"><summary><span class="level">Intermediate</span> What is the difference between a class decorator and class-based decorator?</summary><div class="answer"><p>A class decorator is applied to a class definition and returns a class object or replacement, for example <span class="inline-code">@dataclass</span>. A class-based decorator is a class whose instance decorates a function, usually through <span class="inline-code">__init__</span> and <span class="inline-code">__call__</span>.</p></div></details>
+    <details class="qa"><summary><span class="level">Intermediate</span> Why can <span class="inline-code">lru_cache</span> fail with a list argument?</summary><div class="answer"><p>The cache uses a dictionary-like key, so arguments must be hashable. Lists and dictionaries are mutable and unhashable. A stable immutable key may be appropriate only if converting it preserves the function's semantics.</p></div></details>
+    <h3 class="subhead">Senior</h3>
+    <details class="qa"><summary><span class="level">Senior</span> Why can a class-based decorator fail when applied to a method?</summary><div class="answer"><p>A callable instance with only <span class="inline-code">__call__</span> does not automatically implement function descriptor binding. It may not receive the instance as <span class="inline-code">self</span>. Use a function-based decorator or implement <span class="inline-code">__get__</span> to return a properly bound callable.</p></div></details>
+    <details class="qa"><summary><span class="level">Senior</span> When does decorator order create a security bug?</summary><div class="answer"><p>When a cache wrapper is outside an authorization wrapper, a cache hit can bypass the inner authorization check. Ensure authorization runs before protected results are returned, and design keys/invalidation around security context.</p></div></details>
+    <details class="qa"><summary><span class="level">Senior</span> Is <span class="inline-code">lru_cache</span> exactly-once under concurrency?</summary><div class="answer"><p>No. Its internal cache data structure is thread-safe, but multiple threads can call the wrapped function for the same missing key before the first result is cached. Thread safety does not imply single-flight execution.</p></div></details>
+    <details class="qa"><summary><span class="level">Senior</span> What changed for <span class="inline-code">cached_property</span> in Python 3.12?</summary><div class="answer"><p>The undocumented lock that previously guaranteed one getter execution per instance was removed. The old lock was per-property and could create contention. On Python 3.12+, concurrent access may run the getter more than once; add explicit synchronization if needed.</p></div></details>
+    <details class="qa"><summary><span class="level">Senior</span> Why is retrying a write after timeout dangerous?</summary><div class="answer"><p>A timeout does not prove the remote system failed to complete the operation. Retrying can duplicate a side effect. Use idempotency keys, conditional writes, unique operation IDs or transactions; retry only known transient exceptions.</p></div></details>
+    <details class="qa"><summary><span class="level">Senior</span> How can a decorator preserve the static callable signature?</summary><div class="answer"><p>Use <span class="inline-code">ParamSpec</span> to capture parameter types and <span class="inline-code">TypeVar</span> for the return type. Use <span class="inline-code">Concatenate</span> when injecting or removing a statically representable parameter. <span class="inline-code">wraps</span> helps runtime introspection but is not a substitute for accurate type annotations.</p></div></details>
+    <h3 class="subhead">Architect / scenario-based</h3>
+    <details class="qa"><summary><span class="level">Architect</span> A decorated ingestion write occasionally duplicates rows after retry. How do you redesign it?</summary><div class="answer"><p>First define the write's idempotency contract. Give each logical operation a stable key (for example, batch ID plus target partition), enforce uniqueness or conditional commit at the sink, and ensure ambiguous timeouts can be safely replayed. Narrow retryable exceptions, cap attempts and backoff, and instrument attempts separately from committed operations. Do not rely on the decorator to make a non-idempotent operation safe.</p></div></details>
+    <details class="qa"><summary><span class="level">Architect</span> You need timing for sync, async and generator handlers. How should a library expose it?</summary><div class="answer"><p>Either expose explicit decorators for each callable kind or implement a dispatcher that detects supported kinds and returns a wrapper with matching semantics. Test coroutine creation versus awaiting, generator creation versus full iteration, closure/exception behavior and introspection. State unsupported callable types clearly instead of silently timing only creation.</p></div></details>
+    <details class="qa"><summary><span class="level">Architect</span> A dimension lookup is cached globally, but output differs by tenant. What changes?</summary><div class="answer"><p>The cache key must include every dimension that affects the result, including tenant and possibly principal/permission version. Alternatively, cache tenant-neutral data and enforce access after retrieval. Choose a bounded cache with a documented freshness/invalidation policy. For multi-process deployments, remember that <span class="inline-code">lru_cache</span> is local to each process.</p></div></details>
+    <details class="qa"><summary><span class="level">Architect</span> The team has built 12 decorators around every task. What do you review?</summary><div class="answer"><p>Review whether each behavior is truly cross-cutting, whether nesting is readable, if a framework already provides middleware, and whether transactions, retries, auth and cache layers have correct ordering. Examine stack traces, import-time side effects, observability cardinality, per-call overhead, shared state and test coverage. Collapse redundant layers or use explicit orchestration/context managers where lifecycle is clearer.</p></div></details>
+    <details class="qa"><summary><span class="level">Architect</span> How would you roll out a new retry decorator across hundreds of jobs?</summary><div class="answer"><p>Start with an opt-in policy and inventory operations by idempotency and error class. Provide safe defaults, explicit allow-listed exceptions, bounded attempts/delay, metrics and structured logs. Test against representative clients, canary a small subset, compare retry volume and duplicate/failed outcomes, then expand. Keep a rollback switch and document per-operation overrides.</p></div></details>
+    <details class="qa"><summary><span class="level">Architect</span> Why might an explicit context manager be preferable to a decorator?</summary><div class="answer"><p>Use a context manager when the caller needs a visible lexical scope, access to a resource from <span class="inline-code">__enter__</span>, dynamic per-block setup, or precise lifecycle around a subset of statements. Decorators are cleaner when the entire callable shares a stable cross-cutting policy.</p></div></details>
+  </section>
+
+  <section id="quickref">
+    <div class="section-kicker">19 / Recall sheet</div><h2 class="section-title">Quick reference & glossary</h2>
+    <h3 class="subhead">Decorator templates</h3>
+    <div class="table-wrap"><table><thead><tr><th>Pattern</th><th>Template</th><th>Use when</th></tr></thead><tbody><tr><td>Basic</td><td><span class="inline-code">def deco(func): ...; return wrapper</span></td><td>No decorator configuration needed.</td></tr><tr><td>Factory</td><td><span class="inline-code">def deco(option): return decorate</span></td><td>Configuration is supplied at decoration time.</td></tr><tr><td>Optional args</td><td><span class="inline-code">def deco(func=None, *, option=...)</span></td><td>Support both <span class="inline-code">@deco</span> and <span class="inline-code">@deco(...)</span>.</td></tr><tr><td>Async</td><td><span class="inline-code">async def wrapper(...): return await func(...)</span></td><td>Coroutine function target.</td></tr><tr><td>Generator</td><td><span class="inline-code">yield from func(...)</span></td><td>Measure or wrap generator iteration.</td></tr><tr><td>Class-based</td><td><span class="inline-code">__init__</span> + <span class="inline-code">__call__</span></td><td>Decorator needs persistent state.</td></tr><tr><td>Class decorator</td><td><span class="inline-code">def deco(cls): ...; return cls</span></td><td>Modify/register a class at definition time.</td></tr></tbody></table></div>
+    <h3 class="subhead">Rules worth memorizing</h3>
+    <ul><li><b>Syntax:</b> <span class="inline-code">@d</span> means <span class="inline-code">f = d(f)</span>.</li><li><b>Stacking:</b> <span class="inline-code">@a</span> over <span class="inline-code">@b</span> means <span class="inline-code">f = a(b(f))</span>.</li><li><b>Application:</b> bottom-up; <b>call entry:</b> outermost first.</li><li><b>Timing:</b> decorator application happens when execution reaches the definition.</li><li><b>Wrapper:</b> forward args/kwargs, return result and preserve exceptions.</li><li><b>Metadata:</b> apply <span class="inline-code">@wraps(func)</span>.</li><li><b>Methods:</b> functions bind through descriptor <span class="inline-code">__get__</span>.</li><li><b>Async:</b> await the target from an async wrapper.</li><li><b>Generators:</b> time iteration, not generator creation.</li><li><b>Retries:</b> require narrow exceptions, bounded policy and idempotent effects.</li><li><b>Cache:</b> hashable arguments; thread-safe cache data structure is not exactly-once computation.</li></ul>
+    <h3 class="subhead">Glossary</h3>
+    <div class="table-wrap"><table><thead><tr><th>Term</th><th>Definition</th></tr></thead><tbody><tr><td>Callable</td><td>Object that can be called, typically because it implements <span class="inline-code">__call__</span> or is a function/method/class.</td></tr><tr><td>Closure</td><td>Function retaining references to variables from its enclosing lexical scope.</td></tr><tr><td>Decorator factory</td><td>Outer callable that accepts configuration and returns a decorator.</td></tr><tr><td>Wrapper</td><td>Callable that delegates to the original while adding behavior.</td></tr><tr><td>Descriptor</td><td>Object defining <span class="inline-code">__get__</span>, <span class="inline-code">__set__</span> or <span class="inline-code">__delete__</span> to control attribute access.</td></tr><tr><td>Bound method</td><td>Method object that associates a function with an instance and supplies that instance on call.</td></tr><tr><td>Memoization</td><td>Store results for previously seen input keys to avoid recomputation.</td></tr><tr><td>Idempotency</td><td>Repeating the same logical operation has the same externally visible effect as performing it once.</td></tr><tr><td>Coroutine</td><td>Awaitable object created by calling a coroutine function; executes when awaited/scheduled.</td></tr><tr><td>Generator</td><td>Iterator whose values are produced lazily by a function containing <span class="inline-code">yield</span>.</td></tr><tr><td>ParamSpec</td><td>Typing construct that captures and forwards a callable's parameter specification.</td></tr><tr><td>Introspection</td><td>Runtime examination of callable metadata, signatures and object structure.</td></tr></tbody></table></div>
+  </section>
+
+  <section id="references">
+    <div class="section-kicker">20 / Primary sources</div><h2 class="section-title">Official documentation & verification record</h2>
+    <p class="lead">The primary references are the official Python language reference and Python standard-library documentation. All external factual statements and version notes in this guide are intended to be traceable to these sources.</p>
+    <div class="callout good"><div class="ico">✓</div><p><b>Documentation verification date: 26 November 2026.</b> Verified against the official Python 3.15 documentation (the current documentation version surfaced during research), with older-version change notes included where they affect behavior. The code examples are standard Python and where specifically noted use Python 3.10+ typing syntax.</p></div>
+    <div class="ref-list">
+      <a class="ref" href="https://docs.python.org/3.15/reference/compound_stmts.html#function-definitions" target="_blank" rel="noopener"><b>Function definitions & decorators</b><span>docs.python.org/3.15/reference/compound_stmts.html</span></a>
+      <a class="ref" href="https://docs.python.org/3.15/library/functools.html" target="_blank" rel="noopener"><b>functools — wraps, cache, lru_cache, cached_property</b><span>docs.python.org/3.15/library/functools.html</span></a>
+      <a class="ref" href="https://docs.python.org/3.15/library/inspect.html" target="_blank" rel="noopener"><b>inspect — signatures, unwrap & callable classification</b><span>docs.python.org/3.15/library/inspect.html</span></a>
+      <a class="ref" href="https://docs.python.org/3.15/howto/descriptor.html" target="_blank" rel="noopener"><b>Descriptor Guide</b><span>docs.python.org/3.15/howto/descriptor.html</span></a>
+      <a class="ref" href="https://docs.python.org/3.15/reference/datamodel.html#implementing-descriptors" target="_blank" rel="noopener"><b>Data model — descriptor protocol</b><span>docs.python.org/3.15/reference/datamodel.html</span></a>
+      <a class="ref" href="https://docs.python.org/3.15/library/typing.html" target="_blank" rel="noopener"><b>typing — ParamSpec & Concatenate</b><span>docs.python.org/3.15/library/typing.html</span></a>
+      <a class="ref" href="https://docs.python.org/3.15/library/abc.html" target="_blank" rel="noopener"><b>abc — abstractmethod & decorator order</b><span>docs.python.org/3.15/library/abc.html</span></a>
+      <a class="ref" href="https://docs.python.org/3.15/library/contextlib.html" target="_blank" rel="noopener"><b>contextlib — contextmanager & ContextDecorator</b><span>docs.python.org/3.15/library/contextlib.html</span></a>
+      <a class="ref" href="https://docs.python.org/3.15/library/asyncio-task.html" target="_blank" rel="noopener"><b>asyncio — coroutines, tasks & cancellation</b><span>docs.python.org/3.15/library/asyncio-task.html</span></a>
+      <a class="ref" href="https://docs.python.org/3.15/library/dataclasses.html" target="_blank" rel="noopener"><b>dataclasses — class transformation</b><span>docs.python.org/3.15/library/dataclasses.html</span></a>
+    </div>
+    <h3 class="subhead">Version and availability notes</h3>
+    <div class="table-wrap"><table><thead><tr><th>Feature / change</th><th>Version note</th><th>Practical impact</th></tr></thead><tbody><tr><td>Decorator grammar broadened</td><td>Python 3.9 (PEP 614)</td><td>Decorator expressions can use a wider range of valid expressions than older grammar allowed.</td></tr><tr><td><span class="inline-code">ParamSpec</span>/<span class="inline-code">Concatenate</span></td><td>Python 3.10 typing support</td><td>Enables more precise higher-order callable typing.</td></tr><tr><td><span class="inline-code">inspect.markcoroutinefunction</span></td><td>Python 3.12</td><td>Can mark sync callables returning coroutines for coroutine-function inspection.</td></tr><tr><td><span class="inline-code">functools.wraps</span> copies type parameters</td><td>Python 3.12</td><td>Generic function metadata is preserved by default.</td></tr><tr><td><span class="inline-code">cached_property</span> lock removed</td><td>Python 3.12</td><td>Getter can run more than once concurrently; synchronize explicitly where required.</td></tr><tr><td><span class="inline-code">functools.Placeholder</span></td><td>Python 3.14</td><td>Supports reserved positions in <span class="inline-code">partial()</span>; adjacent callable utility, not a decorator feature.</td></tr><tr><td><span class="inline-code">ContextDecorator</span> generator/coroutine lifecycle</td><td>Python 3.15</td><td>Context remains open through iteration/await; behavior differs from older versions.</td></tr><tr><td><span class="inline-code">singledispatchmethod</span> non-descriptor callables</td><td>Python 3.15</td><td>Expanded support; verify the runtime version if relying on this capability.</td></tr></tbody></table></div>
+    <p class="muted" style="font-size:11px">The guide does not assert cloud-vendor-specific behavior. Python decorators are language and standard-library mechanisms; actual availability is determined by the Python interpreter/runtime version bundled with an application or platform. Check the deployed runtime, not only a developer workstation.</p>
+  </section>
+  <div class="footer"><span>Python Decorators · Interview & Architecture Guide</span><span>Source: attached decorators guide + official Python documentation · Verified 26 Nov 2026</span></div>
+</div></main>
+<script>
+(function(){
+  const body=document.body, sidebar=document.getElementById('sidebar'), overlay=document.getElementById('overlay');
+  const mobileMenu=document.getElementById('mobileMenu');
+  function closeNav(){body.classList.remove('nav-open');}
+  mobileMenu.addEventListener('click',()=>body.classList.toggle('nav-open'));
+  overlay.addEventListener('click',closeNav);
+  document.querySelectorAll('.nav-link').forEach(a=>a.addEventListener('click',closeNav));
+
+  // Navigation search filters links by their visible label and matching section text.
+  const search=document.getElementById('navSearch');
+  const links=[...document.querySelectorAll('.nav-link')];
+  search.addEventListener('input',()=>{
+    const q=search.value.trim().toLowerCase();
+    links.forEach(link=>{
+      const id=link.getAttribute('href').slice(1), section=document.getElementById(id);
+      const hay=(link.textContent+' '+(section?section.textContent:'' )).toLowerCase();
+      link.classList.toggle('hidden',!!q&&!hay.includes(q));
+    });
+  });
+
+  // Active section tracking.
+  const sections=[...document.querySelectorAll('main section[id]')];
+  const linkById=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+  if('IntersectionObserver' in window){
+    const observer=new IntersectionObserver(entries=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){
+          links.forEach(a=>a.classList.remove('active'));
+          const active=linkById.get(entry.target.id); if(active) active.classList.add('active');
+        }
+      });
+    },{rootMargin:'-18% 0px -72% 0px',threshold:0});
+    sections.forEach(s=>observer.observe(s));
+  }
+
+  // Copy controls copy the exact text inside the associated code block.
+  document.querySelectorAll('.copy-btn').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const code=btn.closest('.code-card').querySelector('pre').innerText;
+      const original=btn.textContent;
+      try{
+        if(navigator.clipboard && window.isSecureContext){await navigator.clipboard.writeText(code);}
+        else{
+          const area=document.createElement('textarea');area.value=code;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();
+          const ok=document.execCommand('copy');area.remove();if(!ok) throw new Error('Copy command failed');
+        }
+        btn.textContent='Copied';btn.setAttribute('aria-live','polite');
+      }catch(e){btn.textContent='Select code';}
+      setTimeout(()=>btn.textContent=original,1500);
+    });
+  });
+
+  // Lightweight, dependency-free Python syntax coloring. The original code text is escaped
+  // before token spans are introduced; comments and strings are protected from keyword scans.
+  const keywords=new Set(('and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield True False None').split(' '));
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function highlightPython(code){
+    const token=/([rRuUbBfF]{0,2}(?:'''[\s\S]*?'''|"""[\s\S]*?"""|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"))|(#[^\n]*)|\b\d+(?:\.\d+)?\b|\b[A-Za-z_][A-Za-z0-9_]*\b/g;
+    let out='',last=0,m;
+    while((m=token.exec(code))!==null){out+=esc(code.slice(last,m.index));const t=m[0];let cls='';
+      if(m[1]) cls='tok-str'; else if(m[2]) cls='tok-comment'; else if(/^\d/.test(t)) cls='tok-num'; else if(keywords.has(t)) cls='tok-key'; else if(/^[A-Za-z_]/.test(t) && /\s*\(/.test(code.slice(token.lastIndex))) cls='tok-fn';
+      out+=cls?'<span class="'+cls+'">'+esc(t)+'</span>':esc(t);last=token.lastIndex;
+    }
+    return out+esc(code.slice(last));
+  }
+  document.querySelectorAll('code.language-python').forEach(code=>{code.innerHTML=highlightPython(code.textContent);});
+})();
+</script>
+</body>
+</html>
